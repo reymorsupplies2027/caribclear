@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build": "prisma generate && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",
@@ -14,7 +14,8 @@
     "test:engine": "bun tests/engine.test.ts",
     "test": "bun tests/engine.test.ts",
     "db:pg": "cp prisma/schema.postgres.prisma prisma/schema.prisma && prisma db push && prisma generate",
-    "db:sqlite": "cp prisma/schema.sqlite.backup.prisma prisma/schema.prisma && prisma db push && prisma generate"
+    "db:sqlite": "cp prisma/schema.sqlite.backup.prisma prisma/schema.prisma && prisma db push && prisma generate",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -98,5 +99,5 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5"
   },
-  "description": "CaribClear \u2014 Multi-tenant SaaS for foreign trade operations: shipments, document vault, landed cost engine, T&T permits matrix, importer portal."
+  "description": "CaribClear — Multi-tenant SaaS for foreign trade operations: shipments, document vault, landed cost engine, T&T permits matrix, importer portal."
 }

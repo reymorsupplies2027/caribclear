@@ -1,0 +1,374 @@
+// ============================================================
+// CaribClear — Multi-tenant TradeTech SaaS (SQLite dev / PG prod)
+// tenant_id on every business table + RLS-ready (see supabase/)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── TENANT (Broker / Forwarder / Importer company) ──────────
+model Tenant {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  plan            String   @default("free") // free | pro
+  isActive        Boolean  @default(true)
+  trialEndsAt     DateTime?
+  subscriptionEndsAt DateTime?
+
+  // Branding & ops defaults
+  primaryColor    String?
+  defaultExchangeRate Float @default(6.80) // TTD per USD
+  timezone        String   @default("America/Port_of_Spain")
+
+  // Guided onboarding (checklist of setup steps, JSON array)
+  onboardingStep  Int      @default(0)
+  onboarding      String   @default("[]")
+
+  // Data retention — Customs Act Cap 78:01 requires 5 years
+  dataRetentionYears Int   @default(5)
+
+  createdAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  clients        Client[]
+  shipments      Shipment[]
+  documents      Document[]
+  costCalcs      CostCalculation[]
+  quotes         Quote[]
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  savedRates     SavedProductRate[]
+  invoices       TenantInvoice[]
+}
+
+// ─── USER (auth + role) — super_admin has no tenant ──────────
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  name         String
+  role         String   @default("operator") // super_admin | broker_admin | operator | importer
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId     String?  // set when role = importer
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  security     UserSecurity?
+  client       Client?   @relation(fields: [clientId], references: [id])
+  documents    Document[] @relation("UploadedBy")
+  auditLogs    AuditLog[]
+}
+
+// ─── USER SECURITY — TOTP 2FA + brute-force lockout ──────────
+// Standalone table (no Prisma relation from User): a missing table
+// can never break login. Created idempotently at runtime.
+model UserSecurity {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totpSecretEnc       String?
+  totpEnabled         Boolean  @default(false)
+  pendingSecretEnc    String?
+  pendingCreatedAt    DateTime?
+  lastTotpCounter     Int?
+  backupCodesHash     String? // JSON array of SHA-256 hashes
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ─── CLIENT (importer customer of the broker) ────────────────
+model Client {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  trinNumber String? // TRIN / board of inland revenue number
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  shipments Shipment[]
+  quotes    Quote[]
+}
+
+// (Client back-references wired above)
+
+// ─── SHIPMENT (core entity — 7-state visual timeline) ────────
+// order_placed → sailed → in_transit → arrived → unloaded → in_customs → released
+model Shipment {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id])
+  reference   String   @unique // CC-2026-0001
+  mode        String   @default("sea") // sea | air
+  type        String   @default("import") // import | export
+  status      String   @default("order_placed")
+  statusNote  String?
+
+  carrier     String?
+  vesselOrFlight String?
+  originPort  String?
+  destinationPort String?
+  etd         DateTime?
+  eta         DateTime?
+  incoterm    String? // FOB, CIF, EXW, DDP...
+
+  goodsDescription String
+  fobUsd      Float    @default(0)
+  freightUsd  Float    @default(0)
+  insuranceUsd Float   @default(0)
+  exchangeRate Float?  // TTD per USD snapshot for this shipment
+
+  // Demurrage: grace days at port after arrival, then penalty per day
+  demurrageFreeDays Int @default(5)
+  demurrageStartDate DateTime? // usually arrival/unloaded date
+  demurragePerDayTtd Float @default(350)
+
+  assignedToId String?
+  createdById  String?
+  closedAt     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  containers   Container[]
+  documents    Document[]
+  permits      ShipmentPermit[]
+  quotes       Quote[]
+  costCalcs    CostCalculation[]
+  notifications Notification[]
+}
+
+model Container {
+  id         String  @id @default(cuid())
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  number     String
+  size       String  @default("40ft") // 20ft | 40ft | 40hc | lcl
+  sealNumber String?
+  weightKg   Float?
+}
+
+// ─── DOCUMENT VAULT — versioned, expiry alerts, 5-year retention ──
+model Document {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId String?
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id])
+  clientId   String?
+  groupKey   String   // versioning group: newest isCurrent = true
+  version    Int      @default(1)
+  isCurrent  Boolean  @default(true)
+  type       String   @default("other") // bl | commercial_invoice | packing_list | permit | declaration | c2 | other
+  title      String
+  fileName   String
+  mimeType   String?
+  fileSize   Int      @default(0)
+  storageKey String
+  expiryDate DateTime?
+  notes      String?
+  uploadedById String?
+  uploader   User?    @relation("UploadedBy", fields: [uploadedById], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── HS / CET TARIFF TABLE — editable, versioned externally ──
+model HsCode {
+  id          String  @id @default(cuid())
+  code        String  @unique // HS 6-digit (8-digit national line allowed)
+  description String
+  chapter     String
+  unit        String? // pce, kg, l, u
+  cetRate     Float   // percent — CET band or T&T national deviation
+  vatRate     Float   @default(12.5)
+  vatExempt   Boolean @default(false)
+  dutyBasis   String  @default("cif") // cif | specific
+  notes       String?
+  updatedAt   DateTime @updatedAt
+}
+
+// Saved rate per product (tenant's own catalog)
+model SavedProductRate {
+  id        String  @id @default(cuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  hsCode    String
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+// HS search history (last 50 per tenant handled app-side)
+model HsLookup {
+  id       String   @id @default(cuid())
+  tenantId String?
+  userId   String?
+  query    String
+  hsCode   String?
+  createdAt DateTime @default(now())
+}
+
+// ─── T&T PERMITS MATRIX (TTBizLink guidance, per-category) ───
+model PermitRequirement {
+  id           String  @id @default(cuid())
+  category     String // cfo_agro | ttbs | ema_cec | drug_inspectorate | chemicals | other
+  title        String
+  authority    String
+  description  String?
+  hsPrefixes   String? // comma-separated HS2/HS4/HS6 prefixes that trigger this
+  bizLinkUrl   String?
+  sortOrder    Int     @default(0)
+}
+
+model ShipmentPermit {
+  id            String   @id @default(cuid())
+  shipmentId    String
+  shipment      Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  requirementId String?
+  title         String
+  authority     String?
+  category      String?
+  status        String   @default("pending") // not_required | pending | submitted | approved | rejected
+  expiryDate    DateTime?
+  notes         String?
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── LANDED COST CALCULATION (engine snapshot) ───────────────
+model CostCalculation {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId   String?
+  shipment     Shipment? @relation(fields: [shipmentId], references: [id])
+  name         String
+  hsCode       String
+  mode         String   @default("sea")
+  fobUsd       Float
+  freightUsd   Float
+  insuranceUsd Float
+  exchangeRate Float
+  vehicleCc    Int?
+  vehicleUsed  Boolean?
+  vehicleFuel  String?  // petrol | diesel | ev | hybrid
+  configJson   String   // rate config snapshot used (versioned)
+  breakdownJson String  // line-by-line result
+  cifTtd       Float
+  totalTtd     Float
+  createdById  String?
+  createdAt    DateTime @default(now())
+}
+
+// ─── QUOTE / INVOICE (fees + disbursements + VAT 12.5%) ──────
+model Quote {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  shipmentId String?
+  shipment  Shipment? @relation(fields: [shipmentId], references: [id])
+  number    String   @unique // QT-2026-0001 / IN-2026-0001
+  type      String   @default("quote") // quote | invoice
+  status    String   @default("draft") // draft | sent | approved | rejected | paid
+  itemsJson String   // [{kind:"fee"|"disbursement", description, amount}]
+  feesTotal Float    @default(0)
+  disbursementsTotal Float @default(0)
+  vatRate   Float    @default(12.5)
+  vatTotal  Float    @default(0)
+  total     Float    @default(0)
+  currency  String   @default("TTD")
+  validUntil DateTime?
+  dueDate   DateTime?
+  approvedAt DateTime?
+  approvedById String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── IMMUTABLE AUDIT LOG — hash-chained (court-grade) ────────
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // shipment.created, document.uploaded, quote.approved...
+  entityType String
+  entityId   String?
+  metadata   String?  // JSON (before/after snapshots)
+  prevHash   String?
+  entryHash  String
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+}
+
+// ─── NOTIFICATIONS (in-app; WhatsApp/email adapters behind interface) ──
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?
+  type      String   @default("system") // missing_docs | eta | demurrage | permit_expiry | quote_approved | system
+  severity  String   @default("info") // info | warning | critical
+  title     String
+  body      String
+  channel   String   @default("in_app") // in_app | whatsapp | email
+  shipmentId String?
+  shipment  Shipment? @relation(fields: [shipmentId], references: [id])
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// ─── RATE CONFIG — versioned tax table (NEVER hardcode laws) ──
+// Every engine constant lives here with effectiveFrom dates.
+model RateConfig {
+  id           String   @id @default(cuid())
+  key          String   // vat_standard, duty_8703_petrol, mvt_percc_petrol, customs_declaration_fee...
+  value        String   // JSON: number, bracket table, or flags
+  version      Int      @default(1)
+  effectiveFrom DateTime @default(now())
+  isActive     Boolean  @default(true)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([key, isActive])
+}
+
+// ─── TENANT INVOICE (platform billing to the broker) ─────────
+model TenantInvoice {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  amount    Float
+  currency  String   @default("USD")
+  status    String   @default("pending") // paid | pending | overdue
+  dueDate   DateTime
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+}

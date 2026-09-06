@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -39,6 +40,7 @@ export default function Landing() {
           <nav className="flex items-center gap-2 sm:gap-4">
             <Link href="/sales" className="text-sm font-semibold text-rose-600 hover:text-rose-700 hidden sm:block">Demurrage calculator</Link>
             <Link href="/login" className="text-sm font-medium hover:text-teal-600 hidden sm:block">Sign in</Link>
+            <ThemeToggle />
             <Link href="/register"><Button className="bg-teal-600 hover:bg-teal-700">Start free</Button></Link>
           </nav>
         </div>

@@ -45,71 +45,73 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* CaribClear Caribbean daylight — warm cream, deep navy, clear-water teal, coral */
+  --background: #f6f1e7;
+  --foreground: #14293c;
+  --card: #ffffff;
+  --card-foreground: #14293c;
+  --popover: #ffffff;
+  --popover-foreground: #14293c;
+  --primary: #16334a;
+  --primary-foreground: #f6f1e7;
+  --secondary: #e9f1f5;
+  --secondary-foreground: #16334a;
+  --muted: #efe8da;
+  --muted-foreground: #55697d;
+  --accent: #ddf0f4;
+  --accent-foreground: #0f5e70;
+  --destructive: #c6483c;
+  --border: #e2dac8;
+  --input: #e2dac8;
+  --ring: #2fa7bf;
+  --chart-1: #2fa7bf;
+  --chart-2: #16334a;
+  --chart-3: #f2764b;
+  --chart-4: #e8b04b;
+  --chart-5: #67b99a;
+  --sidebar: #f1eadc;
+  --sidebar-foreground: #14293c;
+  --sidebar-primary: #16334a;
+  --sidebar-primary-foreground: #f6f1e7;
+  --sidebar-accent: #ddf0f4;
+  --sidebar-accent-foreground: #0f5e70;
+  --sidebar-border: #e2dac8;
+  --sidebar-ring: #2fa7bf;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* CaribClear night watch — deep navy harbor, luminous teal, warm coral */
+  --background: #0c1e2b;
+  --foreground: #e8f1f7;
+  --card: #13293a;
+  --card-foreground: #e8f1f7;
+  --popover: #13293a;
+  --popover-foreground: #e8f1f7;
+  --primary: #3fb9ce;
+  --primary-foreground: #06161f;
+  --secondary: #1c3a50;
+  --secondary-foreground: #e8f1f7;
+  --muted: #1c3a50;
+  --muted-foreground: #9ab4c6;
+  --accent: #1e4258;
+  --accent-foreground: #dff4f8;
+  --destructive: #f28070;
+  --border: rgba(232, 241, 247, 0.14);
+  --input: rgba(232, 241, 247, 0.18);
+  --ring: #3fb9ce;
+  --chart-1: #3fb9ce;
+  --chart-2: #7fc7e8;
+  --chart-3: #ff8a5c;
+  --chart-4: #f0c36a;
+  --chart-5: #7ed0ac;
+  --sidebar: #0f2433;
+  --sidebar-foreground: #e8f1f7;
+  --sidebar-primary: #3fb9ce;
+  --sidebar-primary-foreground: #06161f;
+  --sidebar-accent: #1e4258;
+  --sidebar-accent-foreground: #dff4f8;
+  --sidebar-border: rgba(232, 241, 247, 0.14);
+  --sidebar-ring: #3fb9ce;
 }
 
 @layer base {
@@ -118,5 +120,18 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  ::selection {
+    background: rgba(47, 167, 191, 0.28);
+  }
+}
+
+/* Warm elevation — soft harbor shadows that survive both themes */
+@layer utilities {
+  .shadow-harbor {
+    box-shadow: 0 1px 2px rgba(20, 41, 60, 0.06), 0 8px 24px -12px rgba(20, 41, 60, 0.18);
+  }
+  .dark .shadow-harbor {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
   }
 }

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Globe2, Ship, FileText, ReceiptText, CheckCircle2, Clock, LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { SHIPMENT_STATUSES } from '@/lib/engine/seed-data';
 import { toast } from '@/hooks/use-toast';
 import { enqueueOp, isOfflineFailure } from '@/lib/offline/outbox';
@@ -79,7 +80,10 @@ export default function PortalPage() {
               <span className="block text-[11px] text-muted-foreground truncate">{data.client.company ?? data.client.name}</span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4 mr-1" /> Exit</Button>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={logout}><LogOut className="h-4 w-4 mr-1" /> Exit</Button>
+          </div>
         </div>
       </header>
 

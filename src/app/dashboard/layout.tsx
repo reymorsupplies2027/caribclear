@@ -14,6 +14,7 @@ import {
 import {
   LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface Me {
   user: { name: string; email: string; role: string; tenantName: string | null };
@@ -83,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="font-bold truncate">CaribClear</span>
         </Link>
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           <NotifBell unread={unread} notifs={notifs} markAll={markAll} />
           <Button variant="ghost" size="icon" aria-label="Toggle menu" onClick={() => setMenuOpen(v => !v)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -139,6 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {me ? `Welcome back, ${me.user.name.split(' ')[0]} · ${me.user.email}` : 'Loading…'}
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotifBell unread={unread} notifs={notifs} markAll={markAll} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

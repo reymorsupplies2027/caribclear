@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Globe2, Loader2 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { api, ROLE_HOME } from '@/lib/client';
 
 function LoginForm() {
@@ -37,7 +38,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 bg-gradient-to-b from-teal-600/10 to-transparent">
+    <div className="min-h-screen grid place-items-center px-4 bg-gradient-to-b from-teal-600/10 to-transparent relative">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto h-11 w-11 rounded-xl bg-teal-600 grid place-items-center mb-2">

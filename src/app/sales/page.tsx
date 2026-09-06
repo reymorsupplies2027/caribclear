@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useToast } from '@/hooks/use-toast';
 import {
   Globe2, Timer, ShieldCheck, FileCheck2, BellRing, WifiOff, Check, X,
@@ -64,6 +65,7 @@ export default function SalesPortal() {
           </Link>
           <nav className="flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium hover:text-teal-600 hidden sm:block">Sign in</Link>
+            <ThemeToggle />
             <Link href="/register"><Button className="bg-teal-600 hover:bg-teal-700">Start free</Button></Link>
           </nav>
         </div>

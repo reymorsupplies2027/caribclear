@@ -70,3 +70,6 @@ db/*.sql
 upload/
 worklog.md
 .env
+
+# capturas de verificación visual (artefactos locales)
+verify/

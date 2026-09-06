@@ -9,7 +9,7 @@ import { CaribbeanMap } from '@/components/caribbean-map';
 import {
   Ship, FolderLock, Map, Calculator, ShieldCheck, Users, BellRing,
   Search, FileCheck2, Database, ArrowRight, ArrowDown, ArrowLeftRight,
-  Check, Eye, MessageCircle,
+  ArrowUpRight, Check, Eye, MessageCircle,
 } from 'lucide-react';
 
 /* ── Core features — the four cards from the reference ── */
@@ -64,8 +64,8 @@ function EcoNode({ icon: Icon, tint, title, sub, className }: {
   return (
     <div className={`flex flex-col items-center gap-2 rounded-2xl border bg-card p-4 text-center shadow-sm w-full max-w-[220px] mx-auto ${className ?? ''}`}>
       <div className={`h-11 w-11 rounded-xl grid place-items-center ${tint}`}><Icon className="h-5 w-5" /></div>
-      <p className="text-sm font-semibold leading-tight">{title}</p>
-      <p className="text-xs text-muted-foreground leading-snug">{sub}</p>
+      <p className="text-sm font-bold leading-tight text-[#0f2942] dark:text-slate-100">{title}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug">{sub}</p>
     </div>
   );
 }
@@ -137,8 +137,14 @@ export default function Landing() {
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="outline" className="px-6 py-6 text-base font-bold rounded-xl bg-card border-2 w-full sm:w-auto">
-                    <Eye className="h-5 w-5 mr-2" /> See live demo data
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="group w-full sm:w-auto px-6 py-6 text-base font-bold rounded-xl bg-card border border-[#0f2942]/15 dark:border-white/15 hover:border-[#00a3c4]/60 dark:hover:border-teal-400/60 hover:bg-accent/40 dark:hover:bg-white/5 shadow-sm hover:shadow-lg hover:shadow-[#0f2942]/10 dark:hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <Eye className="h-5 w-5 mr-2 text-teal-600 dark:text-teal-400 transition-transform duration-200 group-hover:scale-110" />
+                    See live demo data
+                    <ArrowUpRight className="h-4 w-4 ml-1 text-muted-foreground/60 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-teal-600 dark:group-hover:text-teal-400" />
                   </Button>
                 </Link>
               </div>
@@ -147,6 +153,9 @@ export default function Landing() {
 
             {/* RIGHT — product visualizations, crystal-clean mock cards */}
             <div className="relative flex flex-col sm:flex-row items-start justify-end gap-4 lg:gap-5">
+              {/* Premium glow — turquoise light irradiating from the mockups */}
+              <div aria-hidden="true" className="absolute -top-10 -right-10 w-72 h-72 bg-[#00A3C4] rounded-full blur-[120px] opacity-20 dark:opacity-25 pointer-events-none" />
+
               {/* Cost breakdown + floating alert column */}
               <div className="flex flex-col items-start gap-0 max-w-md w-full lg:ml-auto relative z-10">
                 <div className="bg-card p-6 rounded-2xl shadow-harbor border border-border/60 w-full transform sm:-rotate-1">
@@ -179,7 +188,7 @@ export default function Landing() {
               </div>
 
               {/* Vault + alert column */}
-              <div className="flex flex-col gap-4 w-full sm:w-[220px]">
+              <div className="relative z-10 flex flex-col gap-4 w-full sm:w-[220px]">
                 <div className="bg-primary text-primary-foreground p-5 rounded-2xl shadow-harbor relative overflow-hidden">
                   <div className="absolute -right-4 -top-6 h-20 w-14 rounded-lg border-2 border-current/20 rotate-12 opacity-30" aria-hidden="true" />
                   <div className="absolute -right-2 -top-4 h-20 w-14 rounded-lg border-2 border-current/20 rotate-6 opacity-50" aria-hidden="true" />
@@ -220,8 +229,8 @@ export default function Landing() {
                   <div className={`h-12 w-12 rounded-xl grid place-items-center mb-4 ${f.tint}`}>
                     <f.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="font-bold text-lg leading-snug">{f.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  <h3 className="font-extrabold text-lg leading-snug text-[#0f2942] dark:text-slate-100">{f.title}</h3>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{f.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -233,8 +242,8 @@ export default function Landing() {
               <div key={x.title} className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-4">
                 <x.icon className="h-5 w-5 text-teal-600 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold">{x.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{x.desc}</p>
+                  <p className="text-sm font-bold text-[#0f2942] dark:text-slate-100">{x.title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{x.desc}</p>
                 </div>
               </div>
             ))}
@@ -275,8 +284,8 @@ export default function Landing() {
               <Card key={s.n} className="rounded-2xl shadow-sm border-border/70">
                 <CardContent className="p-6">
                   <div className="h-10 w-10 rounded-xl bg-teal-500 text-white font-black grid place-items-center mb-4 shadow-sm">{s.n}</div>
-                  <h3 className="font-bold">{s.title}</h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                  <h3 className="font-extrabold text-[#0f2942] dark:text-slate-100">{s.title}</h3>
+                  <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{s.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -312,7 +321,14 @@ export default function Landing() {
                       <li key={x} className="flex gap-2"><Check className="h-4 w-4 text-teal-600 mt-0.5 shrink-0" /> {x}</li>
                     ))}
                   </ul>
-                  <Link href="/register"><Button variant="outline" className="w-full mt-7">Start free</Button></Link>
+                  <Link href="/register">
+                    <Button
+                      variant="outline"
+                      className="w-full mt-7 bg-transparent border-border/80 text-muted-foreground font-semibold hover:bg-muted/60 hover:text-foreground hover:border-border transition-all"
+                    >
+                      Start free
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
               {/* Pro */}
@@ -328,7 +344,9 @@ export default function Landing() {
                     ))}
                   </ul>
                   <Link href="/register">
-                    <Button className="w-full mt-7 bg-primary hover:bg-[#163a5c] dark:hover:bg-[#3ad2ee] text-primary-foreground font-bold shadow-md">Go Pro — instant upgrade</Button>
+                    <Button className="w-full mt-7 bg-primary hover:bg-[#163a5c] dark:hover:bg-[#3ad2ee] text-primary-foreground font-bold shadow-lg shadow-teal-500/25 dark:shadow-teal-400/15 hover:shadow-teal-500/40 dark:hover:shadow-teal-300/25 hover:-translate-y-0.5 transition-all">
+                      Go Pro — instant upgrade
+                    </Button>
                   </Link>
                 </CardContent>
               </Card>

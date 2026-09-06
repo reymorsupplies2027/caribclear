@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { CaribbeanMap } from '@/components/caribbean-map';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Globe2, Timer, ShieldCheck, FileCheck2, BellRing, WifiOff, Check, X,
+  Ship, Timer, ShieldCheck, FileCheck2, BellRing, WifiOff, Check, X,
   Calculator, TrendingDown, Lock, Quote as QuoteIcon, ArrowRight, MapPin, Sparkles,
 } from 'lucide-react';
 
@@ -60,20 +61,22 @@ export default function SalesPortal() {
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 h-16">
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-teal-600 grid place-items-center"><Globe2 className="h-5 w-5 text-white" /></div>
-            <span className="font-bold text-lg">CaribClear</span>
+            <span className="h-9 w-9 rounded-lg bg-primary grid place-items-center shadow-sm"><Ship className="h-5 w-5 text-primary-foreground" /></span>
+            <span className="font-bold text-xl tracking-tight"><span className="text-teal-600">Carib</span>Clear</span>
           </Link>
           <nav className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium hover:text-teal-600 hidden sm:block">Sign in</Link>
+            <Link href="/login" className="text-sm font-medium hover:text-foreground hidden sm:block">Log In</Link>
             <ThemeToggle />
-            <Link href="/register"><Button className="bg-teal-600 hover:bg-teal-700">Start free</Button></Link>
+            <Link href="/register"><Button className="bg-primary hover:bg-[#163a5c] dark:hover:bg-[#3ad2ee] text-primary-foreground font-semibold">Start free</Button></Link>
           </nav>
         </div>
       </header>
 
       <main className="flex-1">
         {/* ── HERO: loss aversion + live calculator ── */}
-        <section className="mx-auto max-w-6xl px-4 pt-12 pb-16 grid gap-10 lg:grid-cols-2 items-center">
+        <section className="relative overflow-hidden">
+          <CaribbeanMap className="pointer-events-none absolute inset-0 h-full w-full text-[#0f2942] opacity-[0.05] dark:text-teal-100 dark:opacity-[0.08]" />
+          <div className="relative mx-auto max-w-6xl px-4 pt-12 pb-16 grid gap-10 lg:grid-cols-2 items-center">
           <div>
             <Badge className="bg-rose-500/10 text-rose-600 border-0 mb-4">Every day your container sleeps, you pay</Badge>
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.1]">
@@ -86,7 +89,7 @@ export default function SalesPortal() {
             </p>
             <div className="flex flex-wrap gap-3 mt-6">
               <a href="#calculator"><Button size="lg" className="bg-rose-600 hover:bg-rose-700 px-6"><Calculator className="h-4 w-4 mr-2" />Calculate my exposure — free</Button></a>
-              <Link href="/register"><Button size="lg" variant="outline" px-6>Start free now</Button></Link>
+              <Link href="/register"><Button size="lg" variant="outline" className="px-6">Start free now</Button></Link>
             </div>
             <p className="text-xs text-muted-foreground mt-4">No card. 60 seconds. Your first container on the clock today.</p>
           </div>
@@ -143,6 +146,7 @@ export default function SalesPortal() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </section>
 
         {/* ── CONTRAST ── */}
@@ -234,18 +238,18 @@ export default function SalesPortal() {
                 <Link href="/register"><Button variant="outline" className="w-full mt-5">Start free</Button></Link>
               </CardContent>
             </Card>
-            <Card className="border-teal-600 shadow-lg shadow-teal-600/10 relative">
-              <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-teal-600 text-white border-0">Most chosen</Badge>
+            <Card className="ring-2 ring-primary shadow-harbor relative rounded-2xl">
+              <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground border-0 uppercase tracking-wide text-[10px] px-3">Most Popular</Badge>
               <CardContent className="p-6 flex flex-col h-full">
                 <p className="font-bold">Pro</p>
-                <p className="text-3xl font-extrabold mt-2">US$149<span className="text-sm font-medium text-muted-foreground">/month</span></p>
+                <p className="text-3xl font-extrabold mt-2">US$49<span className="text-sm font-medium text-muted-foreground">/month</span></p>
                 <p className="text-xs text-muted-foreground">per company · all modules</p>
                 <ul className="mt-4 space-y-2 text-sm flex-1">
                   {['10 users, unlimited clients', 'Unlimited shipments + demurrage clock with 48/24h alarms', 'Full 5-year vault + permit matrix', 'Importer portal with 1-click approvals', 'Works offline (PWA) + push notifications'].map(x => (
                     <li key={x} className="flex gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0" />{x}</li>
                   ))}
                 </ul>
-                <Link href="/register"><Button className="w-full mt-5 bg-teal-600 hover:bg-teal-700">Go Pro</Button></Link>
+                <Link href="/register"><Button className="w-full mt-5 bg-primary hover:bg-[#163a5c] dark:hover:bg-[#3ad2ee] text-primary-foreground font-bold">Go Pro</Button></Link>
               </CardContent>
             </Card>
             <Card>

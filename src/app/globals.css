@@ -45,73 +45,93 @@
 
 :root {
   --radius: 0.625rem;
-  /* CaribClear Caribbean daylight — warm cream, deep navy, clear-water teal, coral */
-  --background: #f6f1e7;
-  --foreground: #14293c;
+  /* CaribClear trade winds (light) — cool bone #F4F6F8, deep navy #0F2942, bright turquoise #00A3C4, coral #F2764B */
+  --background: #f4f6f8;
+  --foreground: #0f2942;
   --card: #ffffff;
-  --card-foreground: #14293c;
+  --card-foreground: #0f2942;
   --popover: #ffffff;
-  --popover-foreground: #14293c;
-  --primary: #16334a;
-  --primary-foreground: #f6f1e7;
-  --secondary: #e9f1f5;
-  --secondary-foreground: #16334a;
-  --muted: #efe8da;
-  --muted-foreground: #55697d;
-  --accent: #ddf0f4;
-  --accent-foreground: #0f5e70;
+  --popover-foreground: #0f2942;
+  --primary: #0f2942;
+  --primary-foreground: #f7fafc;
+  --secondary: #e8eef3;
+  --secondary-foreground: #0f2942;
+  --muted: #eaeff4;
+  --muted-foreground: #52667a;
+  --accent: #dcf1f7;
+  --accent-foreground: #066a80;
   --destructive: #c6483c;
-  --border: #e2dac8;
-  --input: #e2dac8;
-  --ring: #2fa7bf;
-  --chart-1: #2fa7bf;
-  --chart-2: #16334a;
+  --border: #dfe5ec;
+  --input: #d9e1e9;
+  --ring: #00a3c4;
+  --chart-1: #00a3c4;
+  --chart-2: #0f2942;
   --chart-3: #f2764b;
   --chart-4: #e8b04b;
   --chart-5: #67b99a;
-  --sidebar: #f1eadc;
-  --sidebar-foreground: #14293c;
-  --sidebar-primary: #16334a;
-  --sidebar-primary-foreground: #f6f1e7;
-  --sidebar-accent: #ddf0f4;
-  --sidebar-accent-foreground: #0f5e70;
-  --sidebar-border: #e2dac8;
-  --sidebar-ring: #2fa7bf;
+  --sidebar: #eef2f6;
+  --sidebar-foreground: #0f2942;
+  --sidebar-primary: #0f2942;
+  --sidebar-primary-foreground: #f7fafc;
+  --sidebar-accent: #dcf1f7;
+  --sidebar-accent-foreground: #066a80;
+  --sidebar-border: #dfe5ec;
+  --sidebar-ring: #00a3c4;
 }
 
 .dark {
-  /* CaribClear night watch — deep navy harbor, luminous teal, warm coral */
-  --background: #0c1e2b;
-  --foreground: #e8f1f7;
-  --card: #13293a;
-  --card-foreground: #e8f1f7;
-  --popover: #13293a;
-  --popover-foreground: #e8f1f7;
-  --primary: #3fb9ce;
-  --primary-foreground: #06161f;
-  --secondary: #1c3a50;
-  --secondary-foreground: #e8f1f7;
-  --muted: #1c3a50;
-  --muted-foreground: #9ab4c6;
-  --accent: #1e4258;
-  --accent-foreground: #dff4f8;
+  /* CaribClear night harbor — deep navy #0A1B2A, luminous turquoise #2CBFDD, warm coral */
+  --background: #0a1b2a;
+  --foreground: #e6eef5;
+  --card: #10263a;
+  --card-foreground: #e6eef5;
+  --popover: #10263a;
+  --popover-foreground: #e6eef5;
+  --primary: #2cbfdd;
+  --primary-foreground: #041824;
+  --secondary: #16324a;
+  --secondary-foreground: #e6eef5;
+  --muted: #14304a;
+  --muted-foreground: #96afc2;
+  --accent: #174a63;
+  --accent-foreground: #d5f2fa;
   --destructive: #f28070;
-  --border: rgba(232, 241, 247, 0.14);
-  --input: rgba(232, 241, 247, 0.18);
-  --ring: #3fb9ce;
-  --chart-1: #3fb9ce;
+  --border: rgba(230, 238, 245, 0.14);
+  --input: rgba(230, 238, 245, 0.18);
+  --ring: #2cbfdd;
+  --chart-1: #2cbfdd;
   --chart-2: #7fc7e8;
   --chart-3: #ff8a5c;
   --chart-4: #f0c36a;
   --chart-5: #7ed0ac;
-  --sidebar: #0f2433;
-  --sidebar-foreground: #e8f1f7;
-  --sidebar-primary: #3fb9ce;
-  --sidebar-primary-foreground: #06161f;
-  --sidebar-accent: #1e4258;
-  --sidebar-accent-foreground: #dff4f8;
-  --sidebar-border: rgba(232, 241, 247, 0.14);
-  --sidebar-ring: #3fb9ce;
+  --sidebar: #0d2135;
+  --sidebar-foreground: #e6eef5;
+  --sidebar-primary: #2cbfdd;
+  --sidebar-primary-foreground: #041824;
+  --sidebar-accent: #174a63;
+  --sidebar-accent-foreground: #d5f2fa;
+  --sidebar-border: rgba(230, 238, 245, 0.14);
+  --sidebar-ring: #2cbfdd;
+}
+
+/*
+ * Brand remap — the whole app already speaks `teal`.
+ * We retune the scale to the CaribClear turquoise (#00A3C4 family) so every
+ * existing icon/button/badge inherits the new identity with zero diff noise.
+ * teal-500 = exact brand accent (details), teal-600 = AA-safe action tone.
+ */
+@theme {
+  --color-teal-50: #ecf9fc;
+  --color-teal-100: #d0f0f8;
+  --color-teal-200: #a3e2f1;
+  --color-teal-300: #6bcfe7;
+  --color-teal-400: #2cbfdd;
+  --color-teal-500: #00a3c4;
+  --color-teal-600: #0089a5;
+  --color-teal-700: #057089;
+  --color-teal-800: #0a5b6f;
+  --color-teal-900: #0e4b5c;
+  --color-teal-950: #083241;
 }
 
 @layer base {
@@ -122,16 +142,24 @@
     @apply bg-background text-foreground;
   }
   ::selection {
-    background: rgba(47, 167, 191, 0.28);
+    background: rgba(0, 163, 196, 0.28);
   }
 }
 
-/* Warm elevation — soft harbor shadows that survive both themes */
+/* Harbor elevation — soft shadows that survive both themes */
 @layer utilities {
   .shadow-harbor {
-    box-shadow: 0 1px 2px rgba(20, 41, 60, 0.06), 0 8px 24px -12px rgba(20, 41, 60, 0.18);
+    box-shadow: 0 1px 2px rgba(15, 41, 66, 0.06), 0 8px 24px -12px rgba(15, 41, 66, 0.18);
   }
   .dark .shadow-harbor {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
           documents: { select: { id: true } },
         },
       }),
-      db.tenantInvoice.findMany({ select: { amount: true, status: true, paidAt: true } }),
+      db.tenantInvoice.findMany({ select: { amount: true, status: true, paidAt: true, dueDate: true } }),
       db.shipment.findMany({
         where: { status: { in: ACTIVE_STATUSES } },
         select: { id: true, tenantId: true, status: true, demurrageStartDate: true, demurrageFreeDays: true, demurragePerDayTtd: true, updatedAt: true },

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Versioning: replaceGroupKey supersedes the current version of that group
     let version = 1;
-    let groupKey = crypto.randomUUID();
+    let groupKey: string = crypto.randomUUID();
     if (body.replaceGroupKey) {
       const prev = await db.document.findFirst({
         where: { tenantId: s.tenantId, groupKey: body.replaceGroupKey, isCurrent: true },

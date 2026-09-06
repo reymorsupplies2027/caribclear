@@ -7,9 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Globe2, Loader2 } from 'lucide-react';
+import { Globe2, Loader2, KeyRound, ShieldCheck, Package, TowerControl } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { api, ROLE_HOME } from '@/lib/client';
+
+/* Saved keys — one-click access for the demo tenant (public demo data) */
+const DEMO_KEYS = [
+  {
+    label: 'Customs Broker — full dashboard', icon: ShieldCheck,
+    email: 'admin@caribbeanfreight.demo', password: 'Demo2026!',
+  },
+  {
+    label: 'Importer — client portal', icon: Package,
+    email: 'importer@demo.tt', password: 'Demo2026!',
+  },
+  {
+    label: 'Super Admin — Control Tower', icon: TowerControl,
+    email: 'super@caribclear.dev', password: 'Super2026!',
+  },
+] as const;
 
 function LoginForm() {
   const params = useSearchParams();
@@ -21,12 +37,11 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function runLogin(em: string, pw: string) {
     setError(''); setLoading(true);
     try {
       const data = await api<{ user: { role: string }; twoFactorRequired?: boolean }>('/api/auth/login', {
-        method: 'POST', body: JSON.stringify({ email, password, totp: totp || undefined }),
+        method: 'POST', body: JSON.stringify({ email: em, password: pw, totp: totp || undefined }),
       });
       if (data.twoFactorRequired) { setNeedTotp(true); setLoading(false); return; }
       // Full-page nav so the fresh cookie is always used (tt-wb lesson)
@@ -35,6 +50,11 @@ function LoginForm() {
       setError(err instanceof Error ? err.message : 'Sign-in failed');
       setLoading(false);
     }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    await runLogin(email, password);
   }
 
   return (
@@ -79,6 +99,34 @@ function LoginForm() {
           <p className="mt-4 text-sm text-center text-muted-foreground">
             New company? <Link href="/register" className="text-teal-600 font-medium hover:underline">Create your tenant</Link>
           </p>
+
+          {/* ── Quick access — saved keys, one click each ── */}
+          <div className="mt-6 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+            <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+              <KeyRound className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" /> Quick access — saved keys
+            </p>
+            <div className="space-y-2">
+              {DEMO_KEYS.map((k) => (
+                <button
+                  key={k.email}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => { setEmail(k.email); setPassword(k.password); runLogin(k.email, k.password); }}
+                  className="w-full flex items-center gap-3 rounded-lg bg-white dark:bg-card border border-slate-200 dark:border-white/10 px-3 py-2.5 text-left hover:border-teal-400/60 hover:shadow-sm transition-all disabled:opacity-50 group"
+                >
+                  <span className="h-8 w-8 rounded-lg bg-teal-500/10 grid place-items-center shrink-0">
+                    <k.icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{k.label}</span>
+                    <span className="block text-[10px] text-slate-400 truncate">{k.email} · {k.password}</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">Enter →</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-slate-400">One click signs you in — no typing. Demo data only.</p>
+          </div>
         </CardContent>
       </Card>
     </div>

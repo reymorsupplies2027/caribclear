@@ -45,43 +45,43 @@
 
 :root {
   --radius: 0.625rem;
-  /* CaribClear trade winds (light) — cool bone #F4F6F8, deep navy #0F2942, bright turquoise #00A3C4, coral #F2764B */
-  --background: #f4f6f8;
-  --foreground: #0f2942;
+  /* CaribClear institutional (light) — slate-50 #F8FAFC canvas, institutional navy #0F172A, electric turquoise #00A9C6, coral #F2764B */
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #0f2942;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0f2942;
-  --primary: #0f2942;
-  --primary-foreground: #f7fafc;
-  --secondary: #e8eef3;
-  --secondary-foreground: #0f2942;
-  --muted: #eaeff4;
-  --muted-foreground: #52667a;
-  --accent: #dcf1f7;
-  --accent-foreground: #066a80;
+  --popover-foreground: #0f172a;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --accent: #e0f5f9;
+  --accent-foreground: #067a93;
   --destructive: #c6483c;
-  --border: #dfe5ec;
-  --input: #d9e1e9;
-  --ring: #00a3c4;
-  --chart-1: #00a3c4;
-  --chart-2: #0f2942;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #00a9c6;
+  --chart-1: #00a9c6;
+  --chart-2: #0f172a;
   --chart-3: #f2764b;
   --chart-4: #e8b04b;
   --chart-5: #67b99a;
-  --sidebar: #eef2f6;
-  --sidebar-foreground: #0f2942;
-  --sidebar-primary: #0f2942;
-  --sidebar-primary-foreground: #f7fafc;
-  --sidebar-accent: #dcf1f7;
-  --sidebar-accent-foreground: #066a80;
-  --sidebar-border: #dfe5ec;
-  --sidebar-ring: #00a3c4;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0f172a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e0f5f9;
+  --sidebar-accent-foreground: #067a93;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #00a9c6;
 }
 
 .dark {
-  /* CaribClear night harbor — deep navy #0A1B2A, luminous turquoise #2CBFDD, warm coral */
-  --background: #0a1b2a;
+  /* CaribClear night harbor — institutional navy #0B192C, luminous turquoise #2CBFDD, warm coral */
+  --background: #0b192c;
   --foreground: #e6eef5;
   --card: #10263a;
   --card-foreground: #e6eef5;
@@ -116,7 +116,7 @@
 
 /*
  * Brand remap — the whole app already speaks `teal`.
- * We retune the scale to the CaribClear turquoise (#00A3C4 family) so every
+ * We retune the scale to the CaribClear electric turquoise (#00A9C6 family) so every
  * existing icon/button/badge inherits the new identity with zero diff noise.
  * teal-500 = exact brand accent (details), teal-600 = AA-safe action tone.
  */
@@ -126,9 +126,9 @@
   --color-teal-200: #a3e2f1;
   --color-teal-300: #6bcfe7;
   --color-teal-400: #2cbfdd;
-  --color-teal-500: #00a3c4;
-  --color-teal-600: #0089a5;
-  --color-teal-700: #057089;
+  --color-teal-500: #00a9c6;
+  --color-teal-600: #008096;
+  --color-teal-700: #056a7f;
   --color-teal-800: #0a5b6f;
   --color-teal-900: #0e4b5c;
   --color-teal-950: #083241;

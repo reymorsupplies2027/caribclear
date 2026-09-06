@@ -25,17 +25,14 @@ export function proxy(req: NextRequest) {
   const isPublicApi = ['/api/auth/', '/api/portal/', '/api/health', '/api/demo/'].some(p => pathname.startsWith(p));
 
   // Dashboard/portal/admin pages: quick cookie guard (JWT verified in handlers)
+  // NOTE: no http→https upgrade here — Vercel's edge already enforces TLS and a
+  // hardcoded scheme upgrade breaks local/standalone runs (301 to https://0.0.0.0).
   if (needsSession) {
     const token = req.cookies.get('cc-session')?.value;
     if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = '/login';
       return NextResponse.redirect(url, 302);
-    }
-    if (req.headers.get('x-forwarded-proto') === 'http' && process.env.NODE_ENV === 'production') {
-      const https = req.nextUrl.clone();
-      https.protocol = 'https:';
-      return NextResponse.redirect(https, 301);
     }
   }
 

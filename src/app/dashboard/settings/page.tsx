@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Settings as SettingsIcon, Download, ShieldCheck, QrCode, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { DeviceSettingsCard } from '@/components/pwa/device-settings-card';
 
 interface SettingsData {
   tenant: { id: string; name: string; plan: string; defaultExchangeRate: number; dataRetentionYears: number };
@@ -118,6 +119,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeviceSettingsCard />
     </div>
   );
 }

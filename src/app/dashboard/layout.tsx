@@ -7,6 +7,7 @@ import { api, fmtDate } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SoundAlerts } from '@/components/pwa/sound-alerts';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -51,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     api<Me>('/api/auth/me')
       .then((data) => {
         if (data.user.role === 'importer') { window.location.href = '/portal'; return; }
-        if (data.user.role === 'super_admin') { window.location.href = '/admin'; return; }
+        if (data.user.role === 'super_admin') { window.location.href = '/tower'; return; }
         setMe(data);
       })
       .catch(() => { window.location.href = '/login'; });
@@ -131,6 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
+        <SoundAlerts />
         {/* Desktop topbar */}
         <header className="hidden lg:flex sticky top-0 z-40 h-16 items-center justify-between border-b bg-background/80 backdrop-blur px-6">
           <div className="text-sm text-muted-foreground truncate">

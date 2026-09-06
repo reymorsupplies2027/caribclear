@@ -1,0 +1,44 @@
+{
+  "name": "CaribClear — Foreign Trade Operations",
+  "short_name": "CaribClear",
+  "description": "Shipments, document vault, landed cost engine and T&T permits for Caribbean brokers and importers. Works offline.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0d9488",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "logistics"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New shipment",
+      "short_name": "New shipment",
+      "description": "Register a shipment in 60 seconds",
+      "url": "/dashboard/shipments?new=1",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Landed cost calculator",
+      "short_name": "Calculator",
+      "description": "CIF, CET duty, MVT, VAT 12.5% — full breakdown",
+      "url": "/dashboard/calculator",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Document vault",
+      "short_name": "Vault",
+      "description": "5-year versioned document vault",
+      "url": "/dashboard/documents",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Globe2, Ship, FileText, ReceiptText, CheckCircle2, Clock, LogOut } from 'lucide-react';
 import { SHIPMENT_STATUSES } from '@/lib/engine/seed-data';
 import { toast } from '@/hooks/use-toast';
+import { enqueueOp, isOfflineFailure } from '@/lib/offline/outbox';
+import { vibrate } from '@/lib/sounds';
 
 interface PortalData {
   client: { name: string; company: string | null };
@@ -32,8 +34,18 @@ export default function PortalPage() {
     try {
       await api('/api/portal', { method: 'POST', body: JSON.stringify({ quoteId }) });
       toast({ title: `Approved ${number}`, description: 'Your broker has been notified instantly.' });
+      vibrate(60);
       load();
-    } catch (err) { toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' }); }
+    } catch (err) {
+      if (isOfflineFailure(err)) {
+        // Offline-first: queue the approval, keep the UI consistent, sync on reconnect.
+        await enqueueOp({ url: '/api/portal', method: 'POST', body: JSON.stringify({ quoteId }), label: `Approve ${number}` });
+        toast({ title: `Approval saved on device`, description: `You are offline. ${number} will be sent to your broker automatically when the signal returns.` });
+        load();
+      } else {
+        toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
+      }
+    }
   }
 
   async function logout() {

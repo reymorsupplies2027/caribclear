@@ -69,7 +69,7 @@ export async function scanAlerts(tenantId: string): Promise<number> {
 
   const active = await db.shipment.findMany({
     where: { tenantId, status: { notIn: ['released'] } },
-    select: { id: true, reference: true, eta: true, demurrageStartDate: true, demurrageFreeDays: true },
+    select: { id: true, reference: true, eta: true, status: true, demurrageStartDate: true, demurrageFreeDays: true },
   });
 
   for (const s of active) {

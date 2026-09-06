@@ -85,17 +85,34 @@ Acceptance criterion "≥20 unit tests with real cases (used vehicle 1500cc, CFO
 
 ## Production deploy (Vercel + Supabase)
 
-1. **Supabase**: create project (us-east-1) → run `supabase/rls-setup.sql` → create the tables (via `prisma db push` with `provider = "postgresql"` or the generated SQL) → set Auth redirect to your domain.
-2. **Vercel**: import this repo → env vars:
+1. **Supabase**: create project (us-east-1 recommended for Vercel) → copy the Postgres connection string (Settings → Database → URI, use the **pooled** 6543 connection for serverless).
+2. **Switch Prisma to Postgres** (one command — no code changes needed, the schema uses no SQLite-exclusive types):
 
-```env
-DATABASE_URL=postgres://...supabase.co:5432/postgres   # or pooled connection
-JWT_SECRET=<64 hex chars>
-NEXT_PUBLIC_APP_URL=https://your-domain.com
+```bash
+npm run db:pg     # swaps provider to postgresql, pushes schema, regenerates client
+# roll back to local SQLite dev anytime with: npm run db:sqlite
 ```
 
-3. Swap the SQLite provider for `postgresql` in `prisma/schema.prisma` (one line), push, deploy.
-4. **Crons** (optional): `vercel.json` schedule or Supabase `pg_cron` → `/api/cron/retention`, `/api/cron/sla-escalation` (implementations append notifications; extend to email/WhatsApp by filling the adapters in `src/lib/notify.ts`).
+3. **Vercel**: import this repo → env vars:
+
+```env
+DATABASE_URL=postgres://...supabase.co:6543/postgres   # pooled connection
+JWT_SECRET=<64 hex chars: openssl rand -hex 32>
+NEXT_PUBLIC_APP_URL=https://caribclear.vercel.app
+VAPID_PUBLIC_KEY=<npx web-push generate-vapid-keys>
+VAPID_PRIVATE_KEY=<same pair>
+VAPID_SUBJECT=mailto:platform@caribclear.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<same public key>
+```
+
+4. **Seed demo data** on the live site (idempotent — safe to re-run):
+
+```bash
+curl -X POST https://your-app.vercel.app/api/demo/seed
+```
+
+5. **Crons** (optional): `vercel.json` schedule or Supabase `pg_cron` → `/api/cron/retention`, `/api/cron/sla-escalation` (implementations append notifications; extend to email/WhatsApp by filling the adapters in `src/lib/notify.ts`).
+6. **RLS hardening** (recommended): run `supabase/rls-setup.sql` in the Supabase SQL editor for defense-in-depth (the app already enforces tenant isolation in its data layer; RLS adds a second wall).
 
 ## Environment variables
 

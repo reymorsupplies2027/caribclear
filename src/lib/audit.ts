@@ -84,8 +84,8 @@ export async function appendAuditLog(input: AuditInput): Promise<{ entryHash: st
   }
 }
 
-/** Verify the whole chain for a tenant — returns broken entry id or null. */
-export async function verifyChain(tenantId: string): Promise<{ ok: boolean; brokenId?: string; checked: number }> {
+/** Verify the whole chain for a tenant (or the platform scope with null) — returns broken entry id or null. */
+export async function verifyChain(tenantId: string | null): Promise<{ ok: boolean; brokenId?: string; checked: number }> {
   const { db } = await import('@/lib/db');
   const entries = await db.auditLog.findMany({
     where: { tenantId },

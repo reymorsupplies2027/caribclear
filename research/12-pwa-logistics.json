@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://developer.mozilla.org",
+    "name": "Offline and background operation - Progressive web apps | MDN",
+    "snippet": "Jun 23, 2025 — The Periodic Background Synchronization API enables a PWA to periodically update its data in the background , while the main app is closed.",
+    "host_name": "developer.mozilla.org",
+    "rank": 0,
+    "date": "Jun 23, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://learn.microsoft.com",
+    "name": "Synchronize and update a PWA in the background",
+    "snippet": "Dec 19, 2025 — Use the App Badging API and the Notifications API to let users know that background tasks, downloads, or fresh content have been completed ... Read more",
+    "host_name": "learn.microsoft.com",
+    "rank": 1,
+    "date": "Dec 19, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://gtcsys.com",
+    "name": "Enhancing User Experience With Background Sync in Pwas",
+    "snippet": "Oct 9, 2023 — PWAs can ensure that essential data is synchronized in the background , even when offline or experiencing poor network conditions.",
+    "host_name": "gtcsys.com",
+    "rank": 2,
+    "date": "Oct 9, 2023",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.digitalapplied.com",
+    "name": "Progressive Web Apps 2026: PWA Performance Guide",
+    "snippet": "Feb 1, 2026 — Service workers also handle push notifications and background sync , making them the foundation for all offline and real-time PWA functionality. Read more",
+    "host_name": "www.digitalapplied.com",
+    "rank": 3,
+    "date": "Feb 1, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.tomaszgil.me",
+    "name": "Offline Support in Web Apps: Foreground Queue vs",
+    "snippet": "Dec 29, 2025 — Background Sync is about maintaining a local copy of server state and continuously reconciling it. schedule periodic sync attempts, push ...",
+    "host_name": "blog.tomaszgil.me",
+    "rank": 4,
+    "date": "Dec 29, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://wild.codes",
+    "name": "How would you architect a PWA for offline-first and real",
+    "snippet": "Push notifications must be secure, contextual, deep-linking, and permissioned . Look for privacy controls (scoped caches, token rotation, cache clear on logout)",
+    "host_name": "wild.codes",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

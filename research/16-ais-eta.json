@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://datalastic.com",
+    "name": "Datalastic: Vessel Tracking API & Ship AIS Database",
+    "snippet": "Get instant access to an accurate vessel API database about historical movements of cargo ships, locations, speed, Estimated time of Arrival (ETA) and real-time ...",
+    "host_name": "datalastic.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.searates.com/integrations/api-vessel-tracking",
+    "name": "Vessel Tracking API | Real-Time Updates on Vessel Performance",
+    "snippet": "Get predictive ETA with API for vessel location tracking. Achieve supply chain visibility — integrate the Vessel Tracking API for container shipping businesses.",
+    "host_name": "www.searates.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.seavantage.com/blog/vessel-tracking-api-integration-guide",
+    "name": "Vessel Tracking API: A 2025 Guide to Real-Time Shipping Visibility",
+    "snippet": "Integrate a Vessel Tracking API to gain real-time shipping visibility. Learn how to automate tracking, manage disruptions, and reduce costs in our 2025 ...",
+    "host_name": "www.seavantage.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.shipfinder.com",
+    "name": "Global Maritime Data API Documentation - ShipFinder",
+    "snippet": "Official ShipFinder API documentation covering AIS, voyage, history, prediction, meteorology, and event datasets for real-time vessel tracking and maritime ...",
+    "host_name": "docs.shipfinder.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/AIS/comments/1nwbh1t/looking_for_a_good_vesseltracking_satellite_ais",
+    "name": "Looking for a good vessel-tracking / satellite AIS API (location +",
+    "snippet": "Oct 2, 2025 · Hi everyone, I'm building an app that needs vessel tracking (real-time or near real-time) with metadata (IMO, name, type, etc.).",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

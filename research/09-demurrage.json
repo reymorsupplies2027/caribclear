@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://gocargotrack.com/D-D",
+    "name": "Detention & Demurrage Monitoring",
+    "snippet": "Monitor detention and demurrage charges in real-time. Free-time countdown , cost calculations, and automated alerts before charges apply.",
+    "host_name": "gocargotrack.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dockflow.com/platform/demurrage-tracking",
+    "name": "Demurrage tracking",
+    "snippet": "Dockflow's demurrage and detention tracking prevents extra fees with automated alerts, ensuring timely container management and cost savings.",
+    "host_name": "dockflow.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://buyco.co/blog/productivity/best-detention-demurrage-management-software",
+    "name": "Best Detention & Demurrage Software",
+    "snippet": "May 21, 2026 — Detention and demurrage management software helps logistics teams monitor container free time , identify at-risk shipments, estimate D&D exposure ... Read more",
+    "host_name": "buyco.co",
+    "rank": 2,
+    "date": "May 21, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.iqax.com/en/blog/demurrage-vs-detention-en",
+    "name": "Demurrage vs Detention: Definitions, Differences, and How",
+    "snippet": "Dec 16, 2025 — Use the system to automatically monitor the countdown for each container's free time . For example, set up automatic alerts 48 hours and 24 ...",
+    "host_name": "www.iqax.com",
+    "rank": 3,
+    "date": "Dec 16, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://terminal49.com/detention-demurrage-charges",
+    "name": "Manage Detention & Demurrage Charges Effectively |",
+    "snippet": "Real-time tracking and alerts give you immediate visibility into your containers, surfacing potential detention and demurrage charges before they accumulate.",
+    "host_name": "terminal49.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://gcaptain.com/how-to-reduce-detention-and-demurrage-costs-using-automated-container-tracking",
+    "name": "Optimize Supply Chain Efficiency: Reduce Demurrage Costs",
+    "snippet": "Jun 26, 2023 — Discover the power of automated container tracking in streamlining your supply chain. Learn effective strategies to minimize detention.",
+    "host_name": "gcaptain.com",
+    "rank": 5,
+    "date": "Jun 26, 2023",
+    "favicon": ""
+  }
+]

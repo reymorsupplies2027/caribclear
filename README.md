@@ -83,20 +83,21 @@ bun tests/engine.test.ts        # 42 assertions: vehicles by cc, foreign-used 75
 
 Acceptance criterion "≥20 unit tests with real cases (used vehicle 1500cc, CFO food item, exempt spare parts…)" — exceeded.
 
-## Production deploy (Vercel + Supabase)
+## Production deploy (Vercel + Neon Postgres) — LIVE
 
-1. **Supabase**: create project (us-east-1 recommended for Vercel) → copy the Postgres connection string (Settings → Database → URI, use the **pooled** 6543 connection for serverless).
-2. **Switch Prisma to Postgres** (one command — no code changes needed, the schema uses no SQLite-exclusive types):
+1. **Neon**: project created (us-east-1). Two connection strings matter:
+   - **Runtime (app)**: the **pooled** `-pooler` host with `?sslmode=require&pgbouncer=true&connection_limit=5` → `DATABASE_URL` in Vercel.
+   - **Migrations**: the **direct** host (no `-pooler`) → used only by `prisma db push` / `migrate`.
+2. **Schema**: already on PostgreSQL (`prisma/schema.prisma`). Roll back to local SQLite dev anytime with `npm run db:sqlite`; re-switch with `npm run db:pg`.
 
 ```bash
-npm run db:pg     # swaps provider to postgresql, pushes schema, regenerates client
-# roll back to local SQLite dev anytime with: npm run db:sqlite
+DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=require" npx prisma db push   # migrations use the DIRECT host
 ```
 
-3. **Vercel**: import this repo → env vars:
+3. **Vercel** env vars:
 
 ```env
-DATABASE_URL=postgres://...supabase.co:6543/postgres   # pooled connection
+DATABASE_URL=postgresql://USER:PASS@ep-xxx-pooler...neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=5
 JWT_SECRET=<64 hex chars: openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://caribclear.vercel.app
 VAPID_PUBLIC_KEY=<npx web-push generate-vapid-keys>
@@ -111,8 +112,8 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=<same public key>
 curl -X POST https://your-app.vercel.app/api/demo/seed
 ```
 
-5. **Crons** (optional): `vercel.json` schedule or Supabase `pg_cron` → `/api/cron/retention`, `/api/cron/sla-escalation` (implementations append notifications; extend to email/WhatsApp by filling the adapters in `src/lib/notify.ts`).
-6. **RLS hardening** (recommended): run `supabase/rls-setup.sql` in the Supabase SQL editor for defense-in-depth (the app already enforces tenant isolation in its data layer; RLS adds a second wall).
+5. **Crons** (optional): `vercel.json` schedule → `/api/cron/retention`, `/api/cron/sla-escalation` (extend to email/WhatsApp by filling the adapters in `src/lib/notify.ts`).
+6. **RLS hardening (optional)**: `supabase/rls-setup.sql` is Supabase-flavored (JWT claims). On Neon, tenant isolation is enforced in the data layer + WORM hash-chain; the `verifyChain` endpoint in Tower → Health proves it live.
 
 ## Environment variables
 

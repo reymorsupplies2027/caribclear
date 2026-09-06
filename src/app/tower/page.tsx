@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Building2, Users, DollarSign, AlertTriangle, Ship, ShieldCheck,
-  RefreshCw, ArrowRight, MapPin, FileClock, Lock,
+  RefreshCw, ArrowRight, MapPin, FileClock, Lock, Sparkles,
 } from 'lucide-react';
 
 interface Overview {
@@ -22,6 +22,7 @@ interface Overview {
   byRegion: Record<string, { total: number; active: number; pro: number; mrr: number }>;
   chainChecks: { name: string; ok: boolean; checked: number }[];
   platformChain: { ok: boolean; checked: number };
+  leads: { total: number; latest: { id: string; name: string; company: string | null; email: string; region: string | null; exposureTtd: number | null; createdAt: string }[] };
 }
 
 export default function TowerOverview() {
@@ -181,6 +182,30 @@ export default function TowerOverview() {
               <p className="text-sm text-muted-foreground col-span-full">No tenants yet — onboard the first from Tenants → Add tenant.</p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Sales leads (from the public sales portal) */}
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-600" />Sales pipeline — portal leads
+            <Badge variant="outline" className="ml-auto">{data.leads.total} total</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {data.leads.latest.map(l => (
+            <div key={l.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 rounded-lg border bg-background p-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{l.name}{l.company ? <span className="text-muted-foreground font-normal"> · {l.company}</span> : null}</p>
+                <p className="text-[11px] text-muted-foreground">{l.email}{l.region ? ` · ${l.region}` : ''} · {fmtDate(l.createdAt)}</p>
+              </div>
+              {l.exposureTtd !== null && l.exposureTtd > 0 && (
+                <span className="text-xs font-bold text-rose-600 shrink-0">their pain: {fmtTTD(l.exposureTtd)}</span>
+              )}
+            </div>
+          ))}
+          {data.leads.latest.length === 0 && <p className="text-sm text-muted-foreground">No leads yet — they arrive from the sales portal calculator.</p>}
         </CardContent>
       </Card>
 

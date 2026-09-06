@@ -37,6 +37,7 @@ export default function Landing() {
             <Badge variant="secondary" className="hidden sm:inline-flex">T&T · CARICOM</Badge>
           </div>
           <nav className="flex items-center gap-2 sm:gap-4">
+            <Link href="/sales" className="text-sm font-semibold text-rose-600 hover:text-rose-700 hidden sm:block">Demurrage calculator</Link>
             <Link href="/login" className="text-sm font-medium hover:text-teal-600 hidden sm:block">Sign in</Link>
             <Link href="/register"><Button className="bg-teal-600 hover:bg-teal-700">Start free</Button></Link>
           </nav>
@@ -58,9 +59,12 @@ export default function Landing() {
             CaribClear puts shipments, documents, landed costs and client approvals in one
             dashboard so friendly it needs no manual.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/register"><Button size="lg" className="bg-teal-600 hover:bg-teal-700 px-8">Create your free account</Button></Link>
-            <Link href="/api/demo/seed"><Button size="lg" variant="outline" className="px-8">See live demo data</Button></Link>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/sales"><Button size="lg" className="bg-rose-600 hover:bg-rose-700 px-8">What is demurrage costing you?</Button></Link>
+              <Link href="/register"><Button size="lg" className="bg-teal-600 hover:bg-teal-700 px-8">Create your free account</Button></Link>
+            </div>
+            <Link href="/api/demo/seed" className="text-xs text-muted-foreground underline">See live demo data</Link>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">Free plan: 1 user · 3 active shipments · basic vault. No card required.</p>
         </section>

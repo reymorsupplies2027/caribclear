@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     await requireSuperAdmin(req);
 
-    const [tenants, invoices, shipments, docsExpiring, audit24h, lockedAccounts] = await Promise.all([
+    const [tenants, invoices, shipments, docsExpiring, audit24h, lockedAccounts, leads] = await Promise.all([
       db.tenant.findMany({
         include: {
           users: { select: { id: true, role: true, lastLogin: true, isActive: true } },
@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
       db.document.count({ where: { expiryDate: { not: null, lte: new Date(Date.now() + 30 * 86400000) } } }),
       db.auditLog.count({ where: { createdAt: { gte: new Date(Date.now() - 86400000) } } }),
       db.userSecurity.count({ where: { lockedUntil: { gt: new Date() } } }),
+      db.lead.findMany({ orderBy: { createdAt: 'desc' }, take: 5 }),
     ]);
+    const leadCount = await db.lead.count();
 
     // Occupancy by region
     const byRegion: Record<string, { total: number; active: number; pro: number; mrr: number }> = {};
@@ -99,6 +101,10 @@ export async function GET(req: NextRequest) {
       byRegion,
       chainChecks: chainChecks.map(c => ({ name: c.name, ok: c.ok, checked: c.checked })),
       platformChain,
+      leads: {
+        total: leadCount,
+        latest: leads.map(l => ({ id: l.id, name: l.name, company: l.company, email: l.email, region: l.region, exposureTtd: l.exposureTtd, createdAt: l.createdAt })),
+      },
     });
   } catch (err) { return guardError(err); }
 }

@@ -399,3 +399,19 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+// ─── SALES LEAD (captured from the public sales portal) ──────
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  company     String?
+  region      String?
+  exposureTtd Float?   // demurrage exposure they calculated (their pain, quantified)
+  message     String?
+  source      String   @default("sales_portal")
+  status      String   @default("new") // new | contacted | demo | won | lost
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}

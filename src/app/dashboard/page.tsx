@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Ship, FolderLock, AlertTriangle, DollarSign, Plus, ArrowRight, CircleCheck } from 'lucide-react';
+import { Ship, FolderLock, AlertTriangle, DollarSign, Plus, ArrowRight, CircleCheck, Timer, ListChecks, AlarmClock, Anchor, OctagonX, FileText, ClipboardCheck, FileClock, Banknote } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface Shipment {
@@ -20,6 +20,16 @@ interface Shipment {
 interface Doc { id: string; title: string; expiryDate: string | null }
 interface Me { user: { role: string }; tenant: { plan: string; onboarding: string } | null }
 interface Calc { id: string; name: string; totalTtd: number; createdAt: string }
+interface DemurrageRow {
+  shipmentId: string; reference: string; clientName: string | null; containers: string[];
+  daysUsed: number; daysLeft: number; exposureTtd: number; perDayTtd: number;
+  risk: 'green' | 'amber' | 'red'; status: string;
+}
+interface WorkTask { kind: string; priority: number; title: string; detail: string; href: string }
+interface WorkQueue {
+  demurrage: DemurrageRow[]; tasks: WorkTask[];
+  summary: { redContainers: number; totalExposureTtd: number; taskCount: number };
+}
 
 const STATUS_ORDER = ['order_placed', 'sailed', 'in_transit', 'arrived', 'unloaded', 'in_customs', 'released'];
 
@@ -28,6 +38,7 @@ export default function DashboardPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [calcs, setCalcs] = useState<Calc[]>([]);
   const [me, setMe] = useState<Me | null>(null);
+  const [wq, setWq] = useState<WorkQueue | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +47,8 @@ export default function DashboardPage() {
       api<{ documents: Doc[] }>('/api/documents').catch(() => ({ documents: [] })),
       api<{ calcs: Calc[] }>('/api/costs').catch(() => ({ calcs: [] })),
       api<Me>('/api/auth/me').catch(() => null),
-    ]).then(([s, d, c, m]) => { setShipments(s.shipments); setDocs(d.documents); setCalcs(c.calcs); setMe(m); })
+      api<WorkQueue>('/api/dashboard/workqueue').catch(() => null),
+    ]).then(([s, d, c, m, w]) => { setShipments(s.shipments); setDocs(d.documents); setCalcs(c.calcs); setMe(m); setWq(w); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -75,6 +87,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* ── The money clock + day plan (execution first) ── */}
+      {wq && (wq.demurrage.length > 0 || wq.tasks.length > 0) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DemurrageClock rows={wq.demurrage} summary={wq.summary} />
+          <DayPlan tasks={wq.tasks} summary={wq.summary} />
+        </div>
+      )}
+
       {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard icon={Ship} tone="teal" label="Shipments in motion" value={String(active.length)} hint={`${released.length} released lifetime`} href="/dashboard/shipments" />
@@ -201,5 +221,83 @@ function KpiCard({ icon: Icon, tone, label, value, hint, href }: {
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+function DemurrageClock({ rows, summary }: { rows: DemurrageRow[]; summary: WorkQueue['summary'] }) {
+  const visible = rows.slice(0, 4);
+  return (
+    <Card className={summary.redContainers > 0 ? 'border-rose-500/40' : ''}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Timer className={`h-4 w-4 ${summary.redContainers > 0 ? 'text-rose-600' : 'text-teal-600'}`} />
+          Demurrage clock
+          {summary.totalExposureTtd > 0 && (
+            <span className="ml-auto text-xs font-bold text-rose-600">exposure {fmtTTD(summary.totalExposureTtd)}</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {visible.map(d => {
+          const cls = d.risk === 'red' ? 'border-rose-500/50 bg-rose-500/5' : d.risk === 'amber' ? 'border-amber-500/50 bg-amber-500/5' : 'border-emerald-500/30';
+          const numCls = d.risk === 'red' ? 'text-rose-600' : d.risk === 'amber' ? 'text-amber-600' : 'text-emerald-600';
+          return (
+            <Link key={d.shipmentId} href={`/dashboard/shipments/${d.shipmentId}`}
+              className={`block rounded-lg border p-2.5 hover:shadow-sm transition-shadow ${cls}`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold truncate">{d.reference}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{d.clientName ?? 'Internal'} · {d.containers.join(', ')}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-lg font-extrabold leading-none ${numCls}`}>
+                    {d.daysLeft <= 0 ? `+${Math.abs(d.daysLeft)}d` : `${d.daysLeft}d`}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {d.daysLeft <= 0 ? `penalizing ${fmtTTD(d.perDayTtd)}/day` : 'free days left'}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+        {rows.length === 0 && <p className="text-sm text-muted-foreground py-3">No containers at port — clock idle.</p>}
+        {rows.length > visible.length && <p className="text-xs text-muted-foreground">+{rows.length - visible.length} more container(s) tracking</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function DayPlan({ tasks, summary }: { tasks: WorkTask[]; summary: WorkQueue['summary'] }) {
+  const visible = tasks.slice(0, 5);
+  const kindIcon: Record<string, React.ComponentType<{ className?: string }>> = {
+    demurrage: AlarmClock, arrival: Anchor, stalled: OctagonX, permit: FileText,
+    permit_expiry: ClipboardCheck, doc_expiry: FileClock, quote_followup: Banknote,
+  };
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <ListChecks className="h-4 w-4 text-teal-600" />Today&apos;s plan
+          <span className="ml-auto text-xs font-semibold text-muted-foreground">{summary.taskCount} action(s)</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {visible.map((t, i) => {
+          const Icon = kindIcon[t.kind] ?? CircleCheck;
+          return (
+            <Link key={i} href={t.href} className="flex items-start gap-2.5 rounded-lg border p-2.5 hover:bg-muted/50 transition-colors">
+              <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${t.priority === 0 ? 'text-rose-600' : 'text-teal-600'}`} />
+              <span className="min-w-0">
+                <span className={`block text-sm font-medium leading-tight ${t.priority === 0 ? 'text-rose-600' : ''}`}>{t.title}</span>
+                <span className="block text-[11px] text-muted-foreground leading-tight mt-0.5">{t.detail}</span>
+              </span>
+            </Link>
+          );
+        })}
+        {tasks.length === 0 && <p className="text-sm text-muted-foreground py-3">Nothing queued — go get more cargo.</p>}
+        {tasks.length > visible.length && <p className="text-xs text-muted-foreground">+{tasks.length - visible.length} more in the queue</p>}
+      </CardContent>
+    </Card>
   );
 }

@@ -19,17 +19,23 @@ async function seed() {
   const daysAgo = (n: number) => new Date(Date.now() - n * 86400000);
   const daysAhead = (n: number) => new Date(Date.now() + n * 86400000);
 
-  // Idempotent: remove previous demo tenant
-  const prev = await db.tenant.findUnique({ where: { slug: 'caribbean-freight-demo' } });
-  if (prev) await db.tenant.delete({ where: { id: prev.id } });
-  await db.user.deleteMany({ where: { email: { in: [DEMO_EMAIL, 'operator@caribbeanfreight.demo', 'importer@demo.tt', 'super@caribclear.dev'] } } });
+  // Idempotent: remove previous demo tenant + regional tower tenants
+  const demoSlugs = ['caribbean-freight-demo', 'kingston-freight-partners', 'bridgetown-clearing-co', 'georgetown-import-hub'];
+  for (const slug of demoSlugs) {
+    const prev = await db.tenant.findUnique({ where: { slug } });
+    if (prev) await db.tenant.delete({ where: { id: prev.id } });
+  }
+  await db.user.deleteMany({ where: { email: { in: [DEMO_EMAIL, 'operator@caribbeanfreight.demo', 'importer@demo.tt', 'admin@kingstonfreight.demo', 'admin@bridgetownclearing.demo', 'admin@georgetownhub.demo', 'wizard@test.bb'] } } });
   await db.hsCode.deleteMany({});
   await db.permitRequirement.deleteMany({});
   await db.rateConfig.deleteMany({ where: { key: 'engine_snapshot' } });
 
-  // Platform super admin
-  const superAdmin = await db.user.create({
-    data: {
+  // Platform super admin — UPSERT, never deleted (deleting a user would break
+  // the hash-chain references to their id; the WORM chain detected this in E2E).
+  const superAdmin = await db.user.upsert({
+    where: { email: 'super@caribclear.dev' },
+    update: {},
+    create: {
       email: 'super@caribclear.dev', name: 'Platform Admin', role: 'super_admin',
       passwordHash: await bcrypt.hash('Super2026!', 10),
     },
@@ -54,6 +60,8 @@ async function seed() {
     data: {
       name: 'Caribbean Freight & Trade Ltd', slug: 'caribbean-freight-demo',
       plan: 'pro', defaultExchangeRate: 6.80,
+      region: 'Trinidad', city: 'Port of Spain', contactEmail: DEMO_EMAIL,
+      priceUsd: 149,
       onboarding: JSON.stringify([
         { id: 'company', label: 'Company profile', done: true },
         { id: 'exchange_rate', label: 'Set TT$/USD exchange rate', done: true },
@@ -174,9 +182,75 @@ async function seed() {
     { tenantId: tenant.id, type: 'quote_approved', severity: 'info', title: 'Cotización enviada al cliente', body: 'QT-2026-0001 esperando aprobación de Sanchez Home & Auto.', shipmentId: s3.id },
   ] });
 
+  // ── Platform billing history for demo tenant (landlord view) ──
+  await db.tenantInvoice.createMany({ data: [
+    { tenantId: tenant.id, amount: 149, currency: 'USD', status: 'paid', period: `${year}-07`, dueDate: daysAgo(45), paidAt: daysAgo(44) },
+    { tenantId: tenant.id, amount: 149, currency: 'USD', status: 'paid', period: `${year}-08`, dueDate: daysAgo(15), paidAt: daysAgo(16) },
+    { tenantId: tenant.id, amount: 149, currency: 'USD', status: 'overdue', period: `${year}-09`, dueDate: daysAgo(3) },
+  ] });
+
+  // ── Regional tenants (Torre de Control — multi-region occupancy) ──
+  const regionalTenants = [
+    {
+      name: 'Kingston Freight Partners', slug: 'kingston-freight-partners', region: 'Jamaica', city: 'Kingston',
+      plan: 'pro', priceUsd: 149, contactEmail: 'admin@kingstonfreight.demo', tz: 'America/Jamaica',
+      admin: { email: 'admin@kingstonfreight.demo', name: 'Marlene Hooper' },
+      inv: [
+        { amount: 149, status: 'paid', period: `${year}-08`, dueDate: daysAgo(15), paidAt: daysAgo(17) },
+        { amount: 149, status: 'pending', period: `${year}-09`, dueDate: daysAhead(12) },
+      ],
+      shipment: { ref: 6, status: 'in_transit', desc: 'Coffee and agro exports (HS 0901)', carrier: 'Seaboard Marine', origin: 'Kingston, JM' },
+    },
+    {
+      name: 'Bridgetown Clearing Co', slug: 'bridgetown-clearing-co', region: 'Barbados', city: 'Bridgetown',
+      plan: 'free', priceUsd: null, contactEmail: 'admin@bridgetownclearing.demo', tz: 'America/Barbados',
+      admin: { email: 'admin@bridgetownclearing.demo', name: 'Ronald Sealy' },
+      inv: [],
+      shipment: { ref: 7, status: 'arrived', desc: 'Retail goods (HS 6109)', carrier: 'Tropical Shipping', origin: 'West Palm Beach, US' },
+    },
+    {
+      name: 'Georgetown Import Hub', slug: 'georgetown-import-hub', region: 'Guyana', city: 'Georgetown',
+      plan: 'pro', priceUsd: 129, contactEmail: 'admin@georgetownhub.demo', tz: 'America/Guyana',
+      admin: { email: 'admin@georgetownhub.demo', name: 'Priya Singh' },
+      inv: [
+        { amount: 129, status: 'paid', period: `${year}-08`, dueDate: daysAgo(15), paidAt: daysAgo(10) },
+      ],
+      shipment: { ref: 8, status: 'in_customs', desc: 'Construction equipment parts (HS 8431)', carrier: 'CMA CGM', origin: 'Shenzhen, CN' },
+      isActive: false as const,
+    },
+  ];
+  for (const rt of regionalTenants) {
+    const t = await db.tenant.create({
+      data: {
+        name: rt.name, slug: rt.slug, plan: rt.plan, priceUsd: rt.priceUsd,
+        region: rt.region, city: rt.city, contactEmail: rt.contactEmail, timezone: rt.tz,
+        isActive: rt.isActive ?? true,
+        defaultExchangeRate: rt.plan === 'pro' ? 6.80 : 6.80,
+      },
+    });
+    const rtAdmin = await db.user.create({
+      data: { email: rt.admin.email, name: rt.admin.name, role: 'broker_admin', tenantId: t.id, passwordHash: await bcrypt.hash(DEMO_PASSWORD, 10) },
+    });
+    const year2 = new Date().getFullYear();
+    const rs = await db.shipment.create({
+      data: {
+        tenantId: t.id, reference: `CC-${year2}-000${rt.shipment.ref}`, status: rt.shipment.status,
+        goodsDescription: rt.shipment.desc, fobUsd: 12000, freightUsd: 2400, insuranceUsd: 300,
+        carrier: rt.shipment.carrier, originPort: rt.shipment.origin, destinationPort: t.city ?? 'Port of Spain',
+        demurrageFreeDays: 5, demurragePerDayTtd: 350,
+        etd: daysAgo(12), eta: rt.shipment.status === 'in_customs' ? daysAgo(6) : daysAhead(5),
+        demurrageStartDate: rt.shipment.status === 'in_customs' ? daysAgo(6) : null,
+        createdById: rtAdmin.id,
+        containers: { create: [{ number: `REG${rt.shipment.ref}000111`, size: '40ft' }] },
+      },
+    });
+    if (rt.inv.length) await db.tenantInvoice.createMany({ data: rt.inv.map(i => ({ tenantId: t.id, amount: i.amount, currency: 'USD', status: i.status, period: i.period, dueDate: i.dueDate, paidAt: i.paidAt ?? null })) });
+    await appendAuditLog({ tenantId: t.id, userId: rtAdmin.id, action: 'demo.seeded', entityType: 'tenant', entityId: t.id, metadata: { shipment: rs.reference } });
+  }
+
   // Audit trail seeds
   await appendAuditLog({ tenantId: tenant.id, userId: admin.id, action: 'demo.seeded', entityType: 'tenant', entityId: tenant.id, metadata: { shipments: 5, clients: 2 } });
-  await appendAuditLog({ tenantId: null, userId: superAdmin.id, action: 'platform.seeded', entityType: 'platform', metadata: { tenant: tenant.slug } });
+  await appendAuditLog({ tenantId: null, userId: superAdmin.id, action: 'platform.seeded', entityType: 'platform', metadata: { tenants: 4, regionalTenants: 3 } });
 
   return {
     tenant: { name: tenant.name, slug: tenant.slug, plan: tenant.plan },
@@ -186,7 +260,7 @@ async function seed() {
       importerPortal: { email: 'importer@demo.tt', password: 'Demo2026!' },
       superAdmin: { email: 'super@caribclear.dev', password: 'Super2026!' },
     },
-    counts: { shipments: 5, hsCodes: HS_SEED.length, permitRules: PERMITS_SEED.length, clients: 2 },
+    counts: { shipments: 8, hsCodes: HS_SEED.length, permitRules: PERMITS_SEED.length, clients: 2, tenants: 4 },
   };
 }
 

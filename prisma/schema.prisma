@@ -27,6 +27,15 @@ model Tenant {
   defaultExchangeRate Float @default(6.80) // TTD per USD
   timezone        String   @default("America/Port_of_Spain")
 
+  // ── Landlord fields (Torre de Control — private, never shown to tenant) ──
+  region          String   @default("Trinidad") // Trinidad | Jamaica | Barbados | Guyana | CARICOM
+  city            String?
+  contactEmail    String?
+  notes           String?  // landlord private notes about this tenant
+  priceUsd        Float?   // subscription price override; null = plan default
+
+  @@index([region])
+
   // Guided onboarding (checklist of setup steps, JSON array)
   onboardingStep  Int      @default(0)
   onboarding      String   @default("[]")
@@ -68,6 +77,7 @@ model User {
   client       Client?   @relation(fields: [clientId], references: [id])
   documents    Document[] @relation("UploadedBy")
   auditLogs    AuditLog[]
+  pushSubs     PushSubscription[]
 }
 
 // ─── USER SECURITY — TOTP 2FA + brute-force lockout ──────────
@@ -368,7 +378,24 @@ model TenantInvoice {
   amount    Float
   currency  String   @default("USD")
   status    String   @default("pending") // paid | pending | overdue
+  period    String?  // billing period "YYYY-MM" — idempotency key for monthly generation
   dueDate   DateTime
   paidAt    DateTime?
   createdAt DateTime @default(now())
+
+  @@index([tenantId, period])
+}
+
+// ─── PUSH SUBSCRIPTION (Web Push endpoint per user device) ───
+model PushSubscription {
+  id       String  @id @default(cuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint String  @unique
+  p256dh   String
+  auth     String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

@@ -30,6 +30,14 @@ export const fmtUSD = (n: number | null | undefined): string =>
 export const fmtDate = (d: string | Date | null | undefined): string =>
   d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
+export const fmtBytes = (n: number | null | undefined): string => {
+  const b = Number(n ?? 0);
+  if (b < 1024) return `${b} B`;
+  if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
+  if (b < 1073741824) return `${(b / 1048576).toFixed(1)} MB`;
+  return `${(b / 1073741824).toFixed(2)} GB`;
+};
+
 export const fmtDateTime = (d: string | Date | null | undefined): string =>
   d ? new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
@@ -47,7 +55,7 @@ export const SHIPMENT_STATUS_META: Record<string, { label: string; pct: number; 
 };
 
 export const ROLE_HOME: Record<string, string> = {
-  super_admin: '/admin',
+  super_admin: '/tower',
   broker_admin: '/dashboard',
   operator: '/dashboard',
   importer: '/portal',

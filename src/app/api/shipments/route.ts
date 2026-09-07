@@ -6,8 +6,20 @@ import { appendAuditLog } from '@/lib/audit';
 
 async function nextReference(tenantId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const count = await db.shipment.count({ where: { tenantId } });
-  return `CC-${year}-${String(count + 1).padStart(4, '0')}`;
+  // Folio is per-tenant (composite unique [tenantId, reference]); scan the tenant's
+  // own references so concurrent creates never collide within the tenant.
+  const refs = await db.shipment.findMany({
+    where: { tenantId, reference: { startsWith: `CC-${year}-` } },
+    select: { reference: true },
+  });
+  let n = refs.length;
+  const taken = new Set(refs.map(r => r.reference));
+  let candidate = '';
+  do {
+    n += 1;
+    candidate = `CC-${year}-${String(n).padStart(4, '0')}`;
+  } while (taken.has(candidate));
+  return candidate;
 }
 
 export async function GET(req: NextRequest) {

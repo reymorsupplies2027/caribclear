@@ -129,7 +129,7 @@ model Shipment {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   clientId    String?
   client      Client?  @relation(fields: [clientId], references: [id])
-  reference   String   @unique // CC-2026-0001
+  reference   String   // CC-2026-0001 — unique PER TENANT (composite below); each broker has its own folio sequence
   mode        String   @default("sea") // sea | air
   type        String   @default("import") // import | export
   status      String   @default("order_placed")
@@ -166,6 +166,8 @@ model Shipment {
   quotes       Quote[]
   costCalcs    CostCalculation[]
   notifications Notification[]
+
+  @@unique([tenantId, reference])
 }
 
 model Container {

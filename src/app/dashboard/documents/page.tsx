@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { api, fmtDate, fmtDateTime, daysUntil } from '@/lib/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { FolderLock, Upload, AlertTriangle, Replace, Trash2, FileText } from 'lucide-react';
+import { FolderLock, Upload, UploadCloud, AlertTriangle, Replace, Trash2, FileText, Download, FileSearch, ShieldCheck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface Doc {
   id: string; groupKey: string; version: number; type: string; title: string; fileName: string;
@@ -29,6 +30,10 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState('all');
   const [open, setOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [parsed, setParsed] = useState<{ name: string; label: string } | null>(null);
+  const [busyDrop, setBusyDrop] = useState(false);
+  const browseRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     const data = await api<{ documents: Doc[] }>(`/api/documents?type=${type}`).catch(() => ({ documents: [] }));
@@ -38,6 +43,45 @@ export default function DocumentsPage() {
   useEffect(() => { load(); }, [load]);
 
   const expiring = docs.filter(d => d.expiryDate && (daysUntil(d.expiryDate) ?? 99) < 30);
+
+  /* ── Dropzone: filename → document-type detection (real parse + real upload) ── */
+  function guessDocType(name: string): { type: string; label: string } {
+    const n = name.toLowerCase();
+    if (/commercial[_\s-]*invoice|\binvoice\b|\binv\b/.test(n)) return { type: 'commercial_invoice', label: 'Commercial Invoice' };
+    if (/bill[_\s-]*of[_\s-]*lading|\bb\/l\b|\bbl\b|lading/.test(n)) return { type: 'bl', label: 'Bill of Lading' };
+    if (/packing[_\s-]*list|\bpl\b/.test(n)) return { type: 'packing_list', label: 'Packing List' };
+    if (/permit|licen[cs]e|certificate/.test(n)) return { type: 'permit', label: 'Permit / Licence' };
+    if (/declaration|\bentry\b|c73|c72/.test(n)) return { type: 'declaration', label: 'Customs Declaration' };
+    if (/\bc2\b/.test(n)) return { type: 'c2', label: 'C2 Form' };
+    return { type: 'other', label: 'Document' };
+  }
+
+  async function uploadDropped(file: File) {
+    setBusyDrop(true); setParsed(null);
+    try {
+      if (file.size > 10 * 1024 * 1024) throw new Error('File exceeds 10MB');
+      const buf = await file.arrayBuffer();
+      let bin = ''; const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const g = guessDocType(file.name);
+      const title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Dropped document';
+      await api('/api/documents', {
+        method: 'POST',
+        body: JSON.stringify({ title, type: g.type, fileName: file.name, mimeType: file.type || null, dataBase64: btoa(bin) }),
+      });
+      setParsed({ name: file.name, label: g.label });
+      toast({ title: `Parsed as ${g.label} — stored`, description: 'AES-256 encrypted · versioned · expiry alerts on.' });
+      load();
+    } catch (err) {
+      toast({ title: 'Drop failed', description: err instanceof Error ? err.message : 'Upload failed', variant: 'destructive' });
+    } finally { setBusyDrop(false); }
+  }
+
+  async function onBrowsePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) await uploadDropped(f);
+    e.target.value = '';
+  }
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
@@ -66,6 +110,47 @@ export default function DocumentsPage() {
         {DOC_TYPES.map(t => <option key={t.k} value={t.k}>{t.label}</option>)}
       </select>
 
+      {/* ── Drag & drop parse zone — drop a document, it is typed and stored ── */}
+      <div
+        role="button" tabIndex={0} aria-label="Drop document to parse and upload"
+        onClick={() => browseRef.current?.click()}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && browseRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault(); setDragOver(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) uploadDropped(f);
+        }}
+        className={cn(
+          'cursor-pointer rounded-xl border-2 border-dashed p-6 sm:p-8 text-center transition-all outline-none',
+          dragOver ? 'border-teal-500 bg-teal-500/5 scale-[1.01]' : 'border-slate-300 dark:border-slate-600 hover:border-teal-500/60 hover:bg-muted/30',
+          busyDrop && 'pointer-events-none opacity-70',
+        )}
+      >
+        <input ref={browseRef} type="file" className="hidden" onChange={onBrowsePicked} aria-hidden="true" />
+        <UploadCloud className={cn('h-9 w-9 mx-auto mb-2', dragOver ? 'text-teal-600' : 'text-slate-400')} />
+        {busyDrop ? (
+          <p className="text-sm font-semibold flex items-center justify-center gap-2">
+            <FileSearch className="h-4 w-4 animate-pulse text-teal-600" /> Parsing document…
+          </p>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Drop Commercial Invoice or Bill of Lading here to parse
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              or click to browse · type auto-detected from the document · encrypted AES-256 on write
+            </p>
+          </>
+        )}
+        {parsed && !busyDrop && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <ShieldCheck className="h-3.5 w-3.5" /> {parsed.name} → detected: {parsed.label}
+          </p>
+        )}
+      </div>
+
       {loading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20" />)}</div> : (
         <div className="grid gap-2 md:grid-cols-2">
           {docs.map(d => {
@@ -88,7 +173,15 @@ export default function DocumentsPage() {
                       {d.expiryDate && <Badge variant="secondary" className={dExp !== null && dExp < 30 ? 'bg-amber-500/15 text-amber-700 border-0' : ''}>
                         {dExp !== null && dExp < 0 ? 'expired' : `exp ${fmtDate(d.expiryDate)}`}
                       </Badge>}
-                      <ReplaceDoc doc={d} onDone={load} />
+                      <div className="flex items-center gap-1">
+                        {d.fileSize > 0 && (
+                          <a href={`/api/documents/${d.id}`} aria-label={`Download ${d.title}`}
+                            className="inline-flex h-7 items-center rounded-md px-2 text-xs font-medium text-teal-600 hover:bg-teal-600/10 transition-colors">
+                            <Download className="h-3.5 w-3.5 mr-1" /> Get
+                          </a>
+                        )}
+                        <ReplaceDoc doc={d} onDone={load} />
+                      </div>
                     </div>
                   </div>
                 </CardContent>

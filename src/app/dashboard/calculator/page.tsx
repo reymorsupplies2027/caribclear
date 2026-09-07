@@ -10,6 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Calculator, AlertTriangle, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { LegalTooltip } from '@/components/legal-tooltip';
+
+/* Maps an engine cost-line key to its legal explanation (Cap 78:01 et al.) */
+const LEGAL_LINE_MAP: Record<string, string> = {
+  cif: 'cif', duty: 'duty', mvt: 'mvt', vat: 'vat',
+  declaration_fee: 'fees', container_exam: 'fees',
+  tyre_tax: 'environmental', plastics_tax: 'environmental', online_tax: 'online',
+};
 
 interface CostLine { key: string; label: string; basis: string; amount: number; kind: string; order: number }
 interface Result {
@@ -175,7 +183,11 @@ export default function CalculatorPage() {
                   <tbody>
                     {result.lines.map(l => (
                       <tr key={l.key} className={`border-b last:border-0 ${l.kind === 'value' ? 'bg-teal-600/5 font-semibold' : ''}`}>
-                        <td className="py-2.5 pr-2">{l.label}</td>
+                        <td className="py-2.5 pr-2">
+                          <span className="inline-flex items-center gap-1.5">{l.label}
+                            <LegalTooltip lineKey={LEGAL_LINE_MAP[l.key] ?? ''} />
+                          </span>
+                        </td>
                         <td className="py-2.5 pr-2 text-xs text-muted-foreground hidden sm:table-cell">{l.basis}</td>
                         <td className={`py-2.5 text-right tabular-nums ${l.kind === 'value' ? 'font-bold' : ''}`}>{fmtTTD(l.amount)}</td>
                       </tr>

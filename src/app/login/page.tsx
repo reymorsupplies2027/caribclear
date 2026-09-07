@@ -58,11 +58,16 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center px-4 bg-gradient-to-b from-teal-600/10 to-transparent relative">
+    <div className="min-h-screen grid place-items-center px-4 bg-[#F8FAFC] dark:bg-slate-950 relative">
+      {/* soft brand accents on the clean canvas */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-teal-500/10 blur-[100px]" />
+        <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-sky-500/10 blur-[100px]" />
+      </div>
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md bg-white dark:bg-card border-slate-200 dark:border-white/10 shadow-sm relative z-10">
         <CardHeader className="text-center">
           <div className="mx-auto h-11 w-11 rounded-xl bg-teal-600 grid place-items-center mb-2">
             <Globe2 className="h-6 w-6 text-white" />
@@ -98,6 +103,21 @@ function LoginForm() {
           </form>
           <p className="mt-4 text-sm text-center text-muted-foreground">
             New company? <Link href="/register" className="text-teal-600 font-medium hover:underline">Create your tenant</Link>
+          </p>
+
+          {/* ── One-click demo access, straight under the form ── */}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={() => { setEmail('admin@caribbeanfreight.demo'); setPassword('Demo2026!'); runLogin('admin@caribbeanfreight.demo', 'Demo2026!'); }}
+            className="mt-3 w-full h-11 border-teal-600/40 text-teal-700 dark:text-teal-400 hover:bg-teal-600/10 hover:border-teal-600 font-semibold"
+          >
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+            Sign in with the Demo test account
+          </Button>
+          <p className="mt-1.5 text-[11px] text-center text-slate-400">
+            Autofills admin@caribbeanfreight.demo · Demo2026! and enters the full dashboard — no typing needed.
           </p>
 
           {/* ── Quick access — saved keys, one click each ── */}

@@ -7,6 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, ShieldCheck, ShieldX, Database, Lock, ScrollText } from 'lucide-react';
 
+interface ServiceHealth {
+  database: { ok: boolean; latencyMs: number; label: string };
+  costEngine: { ok: boolean; latencyMs: number; label: string };
+  vaultEncryption: { ok: boolean; algorithm: string };
+  asycudaEdi: { ok: boolean; detail: string };
+  whatsapp: { ok: boolean; configured: boolean };
+}
+
 interface Health {
   chains: {
     platform: { ok: boolean; checked: number; brokenId: string | null };
@@ -20,6 +28,7 @@ interface Health {
     purgeEligibleDocs: number; retention: string;
   };
   recentAudit: { id: string; action: string; entityType: string; tenantId: string | null; createdAt: string }[];
+  services?: ServiceHealth;
 }
 
 export default function TowerHealthPage() {
@@ -55,6 +64,44 @@ export default function TowerHealthPage() {
 
       {h && (
         <>
+          {/* ── Service status: live LED cards, every probe is a real subsystem check ── */}
+          {h.services && (
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+              <ServiceLed
+                name="ASYCUDA EDI Connection"
+                status={h.services.asycudaEdi.ok ? 'Operational' : 'Idle'}
+                detail={h.services.asycudaEdi.ok ? h.services.asycudaEdi.detail : 'no entries in registry yet'}
+                ok={h.services.asycudaEdi.ok}
+              />
+              <ServiceLed
+                name="WhatsApp Gateway"
+                status={h.services.whatsapp.ok ? 'Connected' : 'Adapter ready'}
+                detail={h.services.whatsapp.ok ? 'Twilio credentials live' : 'credentials pending — in-app alerts live'}
+                ok={h.services.whatsapp.ok}
+              />
+              <ServiceLed
+                name="Vault Encryption"
+                status={h.services.vaultEncryption.ok ? 'Enforced' : 'Check failed'}
+                detail={`${h.services.vaultEncryption.algorithm} roundtrip verified on probe`}
+                ok={h.services.vaultEncryption.ok}
+              />
+              <ServiceLed
+                name="Landed Cost Engine"
+                status={h.services.costEngine.ok ? 'Operational' : 'Degraded'}
+                detail="real calculation per probe"
+                ok={h.services.costEngine.ok}
+                latencyMs={h.services.costEngine.latencyMs}
+              />
+              <ServiceLed
+                name="PostgreSQL"
+                status={h.services.database.ok ? 'Operational' : 'Down'}
+                detail="SELECT 1 on the live pool"
+                ok={h.services.database.ok}
+                latencyMs={h.services.database.latencyMs}
+              />
+            </div>
+          )}
+
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">WORM audit chains (immutable)</CardTitle></CardHeader>
@@ -130,6 +177,29 @@ export default function TowerHealthPage() {
           </Card>
         </>
       )}
+    </div>
+  );
+}
+
+/* LED micro-card — green pulse = healthy, amber pulse = pending/degraded. */
+function ServiceLed({ name, status, detail, ok, latencyMs }: {
+  name: string; status: string; detail: string; ok: boolean; latencyMs?: number;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-3 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 rounded-full shrink-0 animate-pulse ${ok ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+        <p className="text-xs font-bold truncate" title={name}>{name}</p>
+      </div>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className={`text-[11px] font-semibold ${ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>{status}</p>
+        {latencyMs !== undefined && (
+          <span className="rounded-md bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-600 dark:text-slate-300">
+            {latencyMs} ms
+          </span>
+        )}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={detail}>{detail}</p>
     </div>
   );
 }

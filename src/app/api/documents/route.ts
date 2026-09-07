@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireTenant, assertTenantOwns } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
+import { vaultEncrypt } from '@/lib/vault-crypto';
 import crypto from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       fileSize = buf.length;
       const abs = path.join(process.cwd(), 'upload', storageKey);
       await mkdir(path.dirname(abs), { recursive: true });
-      await writeFile(abs, buf);
+      // Encryption at rest: AES-256-GCM envelope before the bytes ever touch disk.
+      await writeFile(abs, vaultEncrypt(buf));
     } else {
       fileSize = body.fileName.length; // metadata-only registration
     }

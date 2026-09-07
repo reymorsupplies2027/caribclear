@@ -99,6 +99,7 @@ DATABASE_URL="postgresql://...neon.tech/neondb?sslmode=require" npx prisma db pu
 ```env
 DATABASE_URL=postgresql://USER:PASS@ep-xxx-pooler...neon.tech/neondb?sslmode=require&pgbouncer=true&connection_limit=5
 JWT_SECRET=<64 hex chars: openssl rand -hex 32>
+VAULT_ENCRYPTION_KEY=<64 hex chars: openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://caribclear.vercel.app
 VAPID_PUBLIC_KEY=<npx web-push generate-vapid-keys>
 VAPID_PRIVATE_KEY=<same pair>
@@ -120,6 +121,7 @@ curl -X POST https://your-app.vercel.app/api/demo/seed
 | Var | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Postgres (prod) / file:db/custom.db (dev) |
+| `VAULT_ENCRYPTION_KEY` | ✅ prod | AES-256-GCM key for document-vault encryption at rest (dev fallback exists; set before storing real documents) |
 | `JWT_SECRET` | ✅ prod | Session signing + TOTP secret encryption (fallback: `WHISTLE_ENCRYPTION_KEY`) |
 | `NEXT_PUBLIC_APP_URL` | — | Absolute URL for links/emails |
 

@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, fmtTTD, fmtDate, SHIPMENT_STATUS_META } from '@/lib/client';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Ship, FolderLock, AlertTriangle, DollarSign, Plus, ArrowRight, CircleCheck, Timer, ListChecks, AlarmClock, Anchor, OctagonX, FileText, ClipboardCheck, FileClock, Banknote } from 'lucide-react';
+import { Ship, FolderLock, AlertTriangle, DollarSign, Plus, ArrowRight, CircleCheck, Timer, ListChecks, AlarmClock, Anchor, OctagonX, FileText, ClipboardCheck, FileClock, Banknote, Filter, ShieldAlert } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface Shipment {
@@ -33,7 +34,26 @@ interface WorkQueue {
 
 const STATUS_ORDER = ['order_placed', 'sailed', 'in_transit', 'arrived', 'unloaded', 'in_customs', 'released'];
 
+/* ── Global port-status filter: isolate critical operations in one second ── */
+type PortFilter = 'all_active' | 'lodgement' | 'query' | 'released';
+const PORT_FILTERS: Array<{ key: PortFilter; label: string; hint: string; alert?: boolean }> = [
+  { key: 'all_active', label: 'All Active', hint: 'Every shipment not yet released' },
+  { key: 'lodgement', label: 'In Lodgement', hint: 'Arrived / discharged / declaration lodged' },
+  { key: 'query', label: 'Customs Query', hint: 'Held by Customs — act now', alert: true },
+  { key: 'released', label: 'Released', hint: 'Cleared and delivered' },
+];
+
+function portFilterFn(f: PortFilter) {
+  return (s: Shipment) => {
+    if (f === 'all_active') return s.status !== 'released';
+    if (f === 'released') return s.status === 'released';
+    if (f === 'lodgement') return ['arrived', 'unloaded', 'in_customs'].includes(s.status);
+    return s.status === 'in_customs'; // query
+  };
+}
+
 export default function DashboardPage() {
+  const [portFilter, setPortFilter] = useState<PortFilter>('all_active');
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [calcs, setCalcs] = useState<Calc[]>([]);
@@ -59,6 +79,11 @@ export default function DashboardPage() {
   const active = shipments.filter(s => s.status !== 'released');
   const inCustoms = shipments.filter(s => s.status === 'in_customs');
   const released = shipments.filter(s => s.status === 'released');
+  const lodgement = shipments.filter(s => ['arrived', 'unloaded', 'in_customs'].includes(s.status));
+  const filterCounts: Record<PortFilter, number> = {
+    all_active: active.length, lodgement: lodgement.length, query: inCustoms.length, released: released.length,
+  };
+  const visibleShipments = shipments.filter(portFilterFn(portFilter));
 
   // Demurrage risk: within 3 days of free days ending (or already penalized)
   const demurrageRisk = active.filter(s => {
@@ -87,6 +112,37 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* ── Global port-status filter (top-left, always first) ── */}
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter shipments by port status">
+        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1">
+          <Filter className="h-3.5 w-3.5" /> Port status
+        </span>
+        {PORT_FILTERS.map(f => {
+          const on = portFilter === f.key;
+          const n = filterCounts[f.key];
+          return (
+            <button key={f.key} title={f.hint} onClick={() => setPortFilter(f.key)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all border',
+                f.alert
+                  ? on
+                    ? 'bg-rose-600 text-white border-rose-600 shadow-sm shadow-rose-600/30'
+                    : 'bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-400 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30'
+                  : on
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-sm shadow-teal-600/25'
+                    : 'bg-background text-muted-foreground border-border hover:border-teal-500/50 hover:text-foreground',
+              )}>
+              {f.alert && <ShieldAlert className="h-3.5 w-3.5" />}
+              {f.label}
+              <span className={cn('rounded-full px-1.5 text-[10px] leading-4 tabular-nums',
+                on ? (f.alert ? 'bg-white/20' : 'bg-white/20') : 'bg-muted text-muted-foreground')}>
+                {n}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── The money clock + day plan (execution first) ── */}
       {wq && (wq.demurrage.length > 0 || wq.tasks.length > 0) && (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -114,14 +170,9 @@ export default function DashboardPage() {
                 Nothing urgent — every shipment is on track.
               </div>
             ) : (
-              <ul className="space-y-2.5">
-                {alerts.slice(0, 6).map(a => (
-                  <li key={a.id} className="flex items-start gap-2.5 text-sm">
-                    <span className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${a.sev === 'critical' ? 'bg-rose-600' : 'bg-amber-500'}`} />
-                    <span>{a.text}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-2.5">
+                {alerts.slice(0, 6).map(a => <AlertCard key={a.id} alert={a} />)}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -165,11 +216,13 @@ export default function DashboardPage() {
 
         <Card className="lg:col-span-3">
           <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-lg">Latest shipments</CardTitle>
+            <CardTitle className="text-lg">
+              {portFilter === 'all_active' ? 'Latest shipments' : `${PORT_FILTERS.find(f => f.key === portFilter)?.label} — ${visibleShipments.length}`}
+            </CardTitle>
             <Link href="/dashboard/shipments"><Button size="sm" variant="ghost" className="gap-1">View all <ArrowRight className="h-4 w-4" /></Button></Link>
           </CardHeader>
           <CardContent className="space-y-2">
-            {shipments.slice(0, 5).map(s => {
+            {visibleShipments.slice(0, 6).map(s => {
               const meta = SHIPMENT_STATUS_META[s.status];
               return (
                 <Link key={s.id} href={`/dashboard/shipments/${s.id}`} className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
@@ -186,15 +239,43 @@ export default function DashboardPage() {
                 </Link>
               );
             })}
-            {shipments.length === 0 && (
+            {visibleShipments.length === 0 && (
               <div className="text-center py-10 text-muted-foreground">
                 <Ship className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="mb-3">No shipments yet. Your first one takes 60 seconds.</p>
+                <p className="mb-3">No shipments in this state. Create one in 60 seconds.</p>
                 <Link href="/dashboard/shipments"><Button className="bg-teal-600 hover:bg-teal-700"><Plus className="h-4 w-4 mr-1" /> Create shipment</Button></Link>
               </div>
             )}
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+interface Alert { id: string; sev: string; text: string }
+
+/* Interactive alert card — customs-query style, one Resolve action per alert */
+function AlertCard({ alert: a }: { alert: Alert }) {
+  const critical = a.sev === 'critical';
+  const [head, ...rest] = a.text.split(': ');
+  const href = a.id.startsWith('x-') ? '/dashboard/documents' : a.id.startsWith('d-') || a.id.startsWith('c-') ? `/dashboard/shipments/${a.id.slice(2)}` : '/dashboard/shipments';
+  return (
+    <div className={`rounded-xl border p-4 shadow-sm hover:shadow-md transition-all relative overflow-hidden group ${critical ? 'border-rose-100 dark:border-rose-500/30' : 'border-amber-100 dark:border-amber-500/30'}`}>
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${critical ? 'bg-rose-500' : 'bg-amber-500'}`} />
+      <div className="flex justify-between items-start gap-3 pl-2">
+        <div className="min-w-0">
+          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${critical ? 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400' : 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-500'}`}>
+            {critical ? 'Action Required' : 'Attention'}
+          </span>
+          <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 mt-1">{head}</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{rest.join(': ')}</p>
+        </div>
+        <Link href={href} className="shrink-0">
+          <Button size="sm" className={`text-white font-bold text-xs px-3 h-8 transition-colors ${critical ? 'bg-[#0F172A] hover:bg-rose-600 dark:bg-rose-600 dark:hover:bg-rose-500' : 'bg-[#0F172A] hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500'}`}>
+            Resolve
+          </Button>
+        </Link>
       </div>
     </div>
   );

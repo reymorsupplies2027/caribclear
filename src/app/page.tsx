@@ -149,7 +149,7 @@ export default function Landing() {
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link href="/register">
                   <Button size="lg" className="bg-[#0F172A] hover:bg-[#1E293B] dark:bg-teal-400 dark:hover:bg-[#3ad2ee] dark:text-[#041824] text-white px-7 py-6 text-base font-bold rounded-lg shadow-md hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-                    Start for TT$0
+                    Start for US$0
                   </Button>
                 </Link>
                 <Link href="/login">
@@ -321,40 +321,43 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── PRICING — left pitch / right cards ── */}
+        {/* ── PRICING — real rental lineup (synced with /pricing and src/lib/plans.ts) ── */}
         <section id="pricing" className="border-t bg-gradient-to-br from-background to-white dark:to-[#0e2536] scroll-mt-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-8 py-16 grid gap-10 lg:grid-cols-2 items-center">
-            <div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-8 py-16">
+            <div className="max-w-2xl">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight text-[#0F172A] dark:text-slate-100">
-                Freemium that respects<br className="hidden sm:block" /> the little guy.
+                Rent the clearing desk.<br className="hidden sm:block" /> Flat monthly, anywhere in the Caribbean.
               </h2>
-              <p className="mt-4 text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
-                Start free — no credit card, no trial countdown. Upgrade only when the demurrage
-                clock and the client portal start paying for themselves. One avoided demurrage week
-                pays for three months of Pro.
+              <p className="mt-4 text-slate-500 dark:text-slate-400 leading-relaxed">
+                Start free — no credit card, no trial countdown. Upgrade only when the demurrage clock and
+                the client portal start paying for themselves: one avoided demurrage week covers a month of Pro.
+                Regional unlocks all 13 ASYCUDA Caribbean administrations — JM, BB, GY, LC, VC, GD, AG and more —
+                on the shared CARICOM CET.
               </p>
-              <div className="mt-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <ShieldCheck className="h-4 w-4 text-teal-600 dark:text-teal-400" /> Cancel anytime · your data exports with you (GDPR).
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-teal-600 dark:text-teal-400" /> Cancel anytime · your data exports with you (GDPR).
+                </span>
+                <Link href="/pricing" className="flex items-center gap-1 font-semibold text-teal-600 dark:text-teal-400 hover:underline">
+                  Full pricing, payment methods &amp; leader comparison <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-5">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 mt-10">
               {/* Free */}
               <Card className="rounded-2xl shadow-sm border-slate-100 dark:border-white/10">
-                <CardContent className="p-7 flex flex-col h-full">
+                <CardContent className="p-6 flex flex-col h-full">
                   <h3 className="font-bold text-lg">Free</h3>
-                  <p className="text-4xl font-black mt-3">TT$0</p>
+                  <p className="text-3xl font-black mt-3">US$0</p>
                   <p className="text-xs text-slate-400 mt-1">forever</p>
-                  <ul className="mt-6 space-y-3 text-sm flex-1">
-                    {['1 user', '3 active shipments', 'Basic document vault', 'Landed cost calculator (3/month)', 'HS/CET search'].map((x) => (
+                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                    {['1 user', '3 active shipments', 'Basic document vault', 'Landed cost calculator (T&T rates)', 'HS/CET search'].map((x) => (
                       <li key={x} className="flex gap-2 text-slate-600 dark:text-slate-300"><Check className="h-4 w-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" /> {x}</li>
                     ))}
                   </ul>
                   <Link href="/register">
-                    <Button
-                      variant="outline"
-                      className="w-full mt-7 bg-transparent border-slate-200 dark:border-white/15 text-slate-500 dark:text-slate-400 font-semibold hover:bg-muted/60 hover:text-foreground hover:border-border transition-all"
-                    >
+                    <Button variant="outline" className="w-full mt-6 bg-transparent border-slate-200 dark:border-white/15 text-slate-500 dark:text-slate-400 font-semibold hover:bg-muted/60 hover:text-foreground hover:border-border transition-all">
                       Start free
                     </Button>
                   </Link>
@@ -363,18 +366,55 @@ export default function Landing() {
               {/* Pro */}
               <Card className="rounded-2xl ring-2 ring-[#0F172A] dark:ring-teal-400 shadow-harbor relative">
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0F172A] dark:bg-teal-400 dark:text-[#041824] text-white border-0 px-3 uppercase tracking-wide text-[10px]">Most Popular</Badge>
-                <CardContent className="p-7 flex flex-col h-full">
+                <CardContent className="p-6 flex flex-col h-full">
                   <h3 className="font-bold text-lg">Pro</h3>
-                  <p className="text-4xl font-black mt-3">US$49<span className="text-base font-medium text-slate-400">/month</span></p>
-                  <p className="text-xs text-slate-400 mt-1">per company · all modules</p>
-                  <ul className="mt-6 space-y-3 text-sm flex-1">
-                    {['Unlimited users & shipments', 'Importer client portal', 'Unlimited landed-cost engine', 'Demurrage clock with 48h/24h alarms', 'Full vault + permits + exports'].map((x) => (
+                  <p className="text-3xl font-black mt-3">US$149<span className="text-base font-medium text-slate-400">/month</span></p>
+                  <p className="text-xs text-slate-400 mt-1">per company · Trinidad &amp; Tobago</p>
+                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                    {['10 users, unlimited shipments', 'Engine v2 + 6 official forms + e-filing', 'AI: OCR, HS classification, demurrage forecast', 'Demurrage clock 48h/24h alarms', '50 GB encrypted vault + client portal'].map((x) => (
                       <li key={x} className="flex gap-2 text-slate-600 dark:text-slate-300"><Check className="h-4 w-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" /> {x}</li>
                     ))}
                   </ul>
                   <Link href="/register">
-                    <Button className="w-full mt-7 bg-[#0F172A] hover:bg-[#1E293B] dark:bg-teal-400 dark:hover:bg-[#3ad2ee] dark:text-[#041824] text-white font-bold shadow-lg shadow-teal-500/25 dark:shadow-teal-400/15 hover:shadow-teal-500/40 dark:hover:shadow-teal-300/25 hover:-translate-y-0.5 transition-all">
+                    <Button className="w-full mt-6 bg-[#0F172A] hover:bg-[#1E293B] dark:bg-teal-400 dark:hover:bg-[#3ad2ee] dark:text-[#041824] text-white font-bold shadow-lg shadow-teal-500/25 dark:shadow-teal-400/15 hover:shadow-teal-500/40 dark:hover:shadow-teal-300/25 hover:-translate-y-0.5 transition-all">
                       Go Pro — instant upgrade
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+              {/* Regional */}
+              <Card className="rounded-2xl shadow-sm border-slate-100 dark:border-white/10 relative">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-600 dark:bg-teal-500 text-white border-0 px-3 uppercase tracking-wide text-[10px]">Rent anywhere</Badge>
+                <CardContent className="p-6 flex flex-col h-full">
+                  <h3 className="font-bold text-lg">Regional</h3>
+                  <p className="text-3xl font-black mt-3">US$449<span className="text-base font-medium text-slate-400">/month</span></p>
+                  <p className="text-xs text-slate-400 mt-1">everything in Pro · all Caribbean</p>
+                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                    {['All 13 ASYCUDA administrations', 'Regional rates: JM, BB, GY, LC, VC, GD, AG', 'Regional e-filing + one vault per lane', '15 users · 100 GB vault'].map((x) => (
+                      <li key={x} className="flex gap-2 text-slate-600 dark:text-slate-300"><Check className="h-4 w-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" /> {x}</li>
+                    ))}
+                  </ul>
+                  <Link href="/register">
+                    <Button variant="outline" className="w-full mt-6 font-semibold border-teal-600/40 dark:border-teal-400/40 text-teal-700 dark:text-teal-300 hover:bg-teal-400/10 transition-all">
+                      Go Regional
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+              {/* Enterprise */}
+              <Card className="rounded-2xl shadow-sm border-slate-100 dark:border-white/10">
+                <CardContent className="p-6 flex flex-col h-full">
+                  <h3 className="font-bold text-lg">Enterprise</h3>
+                  <p className="text-3xl font-black mt-3">US$1,500<span className="text-base font-medium text-slate-400">/month+</span></p>
+                  <p className="text-xs text-slate-400 mt-1">big shippers &amp; multi-office brokers</p>
+                  <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                    {['Everything in Regional', 'Country calibration packs', 'SLA + ERP integration', 'Dedicated onboarding · 500 GB vault'].map((x) => (
+                      <li key={x} className="flex gap-2 text-slate-600 dark:text-slate-300"><Check className="h-4 w-4 text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" /> {x}</li>
+                    ))}
+                  </ul>
+                  <Link href="/sales">
+                    <Button variant="outline" className="w-full mt-6 bg-transparent border-slate-200 dark:border-white/15 text-slate-500 dark:text-slate-400 font-semibold hover:bg-muted/60 hover:text-foreground hover:border-border transition-all">
+                      Talk to us
                     </Button>
                   </Link>
                 </CardContent>

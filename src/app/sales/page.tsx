@@ -224,12 +224,12 @@ export default function SalesPortal() {
         {/* ── PRICING (anchored) ── */}
         <section className="mx-auto max-w-5xl px-4 py-14">
           <h2 className="text-2xl font-extrabold tracking-tight text-center">Pricing that makes the alarm worth it</h2>
-          <p className="text-center text-muted-foreground mt-2">One wrong HS classification can cost more than a year of Pro. One avoided demurrage week pays for three.</p>
-          <div className="grid gap-5 md:grid-cols-3 mt-8 items-stretch">
+          <p className="text-center text-muted-foreground mt-2">One wrong HS classification can cost more than a year of Pro. One avoided demurrage week pays for the month.</p>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4 mt-8 items-stretch">
             <Card>
               <CardContent className="p-6 flex flex-col h-full">
                 <p className="font-bold">Free</p>
-                <p className="text-3xl font-extrabold mt-2">TT$0</p>
+                <p className="text-3xl font-extrabold mt-2">US$0</p>
                 <p className="text-xs text-muted-foreground">forever</p>
                 <ul className="mt-4 space-y-2 text-sm flex-1">
                   <li className="flex gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0" />1 user</li>
@@ -243,10 +243,10 @@ export default function SalesPortal() {
               <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground border-0 uppercase tracking-wide text-[10px] px-3">Most Popular</Badge>
               <CardContent className="p-6 flex flex-col h-full">
                 <p className="font-bold">Pro</p>
-                <p className="text-3xl font-extrabold mt-2">US$49<span className="text-sm font-medium text-muted-foreground">/month</span></p>
-                <p className="text-xs text-muted-foreground">per company · all modules</p>
+                <p className="text-3xl font-extrabold mt-2">US$149<span className="text-sm font-medium text-muted-foreground">/month</span></p>
+                <p className="text-xs text-muted-foreground">per company · Trinidad &amp; Tobago</p>
                 <ul className="mt-4 space-y-2 text-sm flex-1">
-                  {['10 users, unlimited clients', 'Unlimited shipments + demurrage clock with 48/24h alarms', 'Full 5-year vault + permit matrix', 'Importer portal with 1-click approvals', 'Works offline (PWA) + push notifications'].map(x => (
+                  {['10 users, unlimited clients', 'Unlimited shipments + demurrage clock with 48/24h alarms', 'Engine v2 + 6 official forms + e-filing', 'AI: OCR, HS classification, demurrage forecast', 'Importer portal + offline PWA + push'].map(x => (
                     <li key={x} className="flex gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0" />{x}</li>
                   ))}
                 </ul>
@@ -255,11 +255,24 @@ export default function SalesPortal() {
             </Card>
             <Card>
               <CardContent className="p-6 flex flex-col h-full">
-                <p className="font-bold">Enterprise</p>
-                <p className="text-3xl font-extrabold mt-2">Custom</p>
-                <p className="text-xs text-muted-foreground">multi-office groups</p>
+                <p className="font-bold">Regional</p>
+                <p className="text-3xl font-extrabold mt-2">US$449<span className="text-sm font-medium text-muted-foreground">/month</span></p>
+                <p className="text-xs text-muted-foreground">everything in Pro · all Caribbean</p>
                 <ul className="mt-4 space-y-2 text-sm flex-1">
-                  {['Multiple tenants under one group', 'Priority support + onboarding on site', 'Rate table governance across offices', 'Custom retention & reporting'].map(x => (
+                  {['All 13 ASYCUDA administrations', 'Regional rates: JM, BB, GY, LC, VC, GD, AG', 'Regional e-filing + one vault per lane', '15 users · 100 GB vault'].map(x => (
+                    <li key={x} className="flex gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0" />{x}</li>
+                  ))}
+                </ul>
+                <Link href="/register"><Button variant="outline" className="w-full mt-5 font-semibold">Go Regional</Button></Link>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 flex flex-col h-full">
+                <p className="font-bold">Enterprise</p>
+                <p className="text-3xl font-extrabold mt-2">US$1,500<span className="text-sm font-medium text-muted-foreground">/month+</span></p>
+                <p className="text-xs text-muted-foreground">multi-office groups &amp; big shippers</p>
+                <ul className="mt-4 space-y-2 text-sm flex-1">
+                  {['Everything in Regional', 'Country calibration packs', 'SLA + ERP integration', 'Priority support + onboarding on site'].map(x => (
                     <li key={x} className="flex gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0" />{x}</li>
                   ))}
                 </ul>
@@ -267,6 +280,9 @@ export default function SalesPortal() {
               </CardContent>
             </Card>
           </div>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Pay your rental with WiPay or PayPal — see <Link href="/pricing" className="font-semibold text-primary hover:underline">full pricing &amp; comparison</Link>.
+          </p>
         </section>
 
         {/* ── FOUNDING PROGRAM + LEAD FORM ── */}

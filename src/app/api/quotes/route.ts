@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const disb = items.filter(i => i.kind === 'disbursement');
     const feesTotal = round2(fees.reduce((s2, i) => s2 + Number(i.amount || 0), 0));
     const disbTotal = round2(disb.reduce((s2, i) => s2 + Number(i.amount || 0), 0));
-    // Broker honorarios llevan VAT; disbursements (gastos de terceros) no llevan
+    // Broker fees carry VAT; disbursements (third-party outlays) do not
     const vatTotal = round2(feesTotal * 0.125);
     const total = round2(feesTotal + disbTotal + vatTotal);
 
@@ -95,8 +95,8 @@ export async function PATCH(req: NextRequest) {
       const { notify } = await import('@/lib/notify');
       await notify({
         tenantId: s.tenantId, shipmentId: quote.shipmentId, type: 'system',
-        title: `${quote.number} enviada al cliente`,
-        body: `${quote.type === 'quote' ? 'Cotización' : 'Factura'} por TT$${quote.total.toLocaleString()} enviada para aprobación.`,
+        title: `${quote.number} sent to client`,
+        body: `${quote.type === 'quote' ? 'Quote' : 'Invoice'} for TT$${quote.total.toLocaleString()} sent for approval.`,
       });
     }
     return ok({ quote: updated });

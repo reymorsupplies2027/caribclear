@@ -128,7 +128,7 @@ export interface LandedCostResult {
   feesTtd: number;
   environmentalTtd: number;
   totalTtd: number;
-  landedOverCifPct: number; // (total - CIF) / CIF × 100 — "cuánto cuesta nacionalizar"
+  landedOverCifPct: number; // (total - CIF) / CIF × 100 — "what it costs to nationalize"
   lines: CostLine[];
   warnings: string[];
   vehicleConcession?: {    // populated for HS 8703 — explains the regime applied
@@ -204,9 +204,9 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
   if (v.used && age !== null) {
     const limit = isCommercial ? cfg.usedLightCommercialAgeLimitYears : cfg.usedPrivateAgeLimitYears;
     if (age > limit) {
-      warnings.push(`Vehículo usado de ${age} años: supera el límite de ${limit} años (Budget FY2026) — probablemente NO importable como ${isCommercial ? 'vehículo comercial ligero' : 'auto privado'} usado.`);
+      warnings.push(`Used vehicle ${age} years old: exceeds the ${limit}-year limit (Budget FY2026) — likely NOT importable as a used ${isCommercial ? 'light commercial vehicle' : 'private car'}.`);
     } else if (age >= limit - 1) {
-      warnings.push(`Vehículo de ${age} años: dentro del límite de ${limit} años — verifique inspección previa al embarque (pre-shipment inspection).`);
+      warnings.push(`Vehicle ${age} years old: within the ${limit}-year limit — verify pre-shipment inspection is arranged.`);
     }
   }
 
@@ -214,19 +214,19 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
   if (v.returningNational) {
     if (cfg.returningNationalDutyRelief) {
       res.dutyRate = 0; res.dutyTtd = 0; res.regime = 'returning_national';
-      res.dutyLabel = 'Import duty — EXENTO (returning national)';
-      res.dutyBasis = 'Customs Act s.45A: un vehículo, ≥5 años residencia; recuperable si se transfiere en 2 años';
+      res.dutyLabel = 'Import duty — EXEMPT (returning national)';
+      res.dutyBasis = 'Customs Act s.45A: one vehicle, ≥5 years residency; recoverable if transferred within 2 years';
       res.instruments.push('Customs Act s.45A (Act 2 of 2013 s.15)');
     }
     // MVT full: item 6 (75%) excludes returning nationals; Part II relief revoked 4 Aug 2026
     const perCc = mvtPerCc(v, cfg);
     if (perCc > 0 && v.engineCc > 0) {
       res.mvtTtd = round2(v.engineCc * perCc);
-      res.mvtLabel = `Motor Vehicle Tax — TARIFA COMPLETA (returning national)`;
-      res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc — Part II revocada por L.N. 613/2026 (4-Ago-2026); item 6 (75%) no aplica a returning nationals`;
-      res.instruments.push('MVRTA App. A Part I item 1; Part II revocada por L.N. 613/2026 cl. 2(e)(ii)');
+      res.mvtLabel = `Motor Vehicle Tax — FULL RATE (returning national)`;
+      res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc — Part II repealed by L.N. 613/2026 (4 Aug 2026); item 6 (75%) does not apply to returning nationals`;
+      res.instruments.push('MVRTA App. A Part I item 1; Part II repealed by L.N. 613/2026 cl. 2(e)(ii)');
     }
-    res.instruments.push('Budget FY2026: concesiones MVT/VAT de returning nationals removidas desde 1-Ene-2026');
+    res.instruments.push('Budget FY2026: returning-national MVT/VAT concessions removed from 1 Jan 2026');
     return res;
   }
 
@@ -235,16 +235,16 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
     if (!isCommercial) {
       const inAgeScope = age === null ? true : age <= cfg.evUsedAgeLimitYears; // new or used ≤2y
       if (!inAgeScope) {
-        warnings.push(`EV usado de ${age} años: la concesión privada cubre nuevo o usado ≤${cfg.evUsedAgeLimitYears} años (L.N. 247/2024 cl. 3) — aplicando tarifa estándar; verifique con su broker.`);
+        warnings.push(`Used EV ${age} years old: the private concession covers new or used ≤${cfg.evUsedAgeLimitYears} years (L.N. 247/2024 cl. 3) — applying standard rate; confirm with your broker.`);
         res.dutyRate = cfg.dutyEv;
         res.dutyTtd = round2(cifTtd * (cfg.dutyEv / 100));
-        res.dutyLabel = `Impuesto de importación (EV estándar 8703.90.00)`;
+        res.dutyLabel = `Import duty (EV standard 8703.90.00)`;
         res.dutyBasis = `CIF × ${cfg.dutyEv}%`;
         const kw = v.motorKw ?? 0;
         res.mvtTtd = round2(kw * cfg.evMvtUsedTtdPerKw);
         if (kw > 0) {
-          res.mvtLabel = 'Motor Vehicle Tax (EV, por kW)';
-          res.mvtBasis = `${kw} kW × TT$${cfg.evMvtUsedTtdPerKw}/kW (App. A Part IA item 8, usado)`;
+          res.mvtLabel = 'Motor Vehicle Tax (EV, per kW)';
+          res.mvtBasis = `${kw} kW × TT$${cfg.evMvtUsedTtdPerKw}/kW (App. A Part IA item 8, used)`;
         }
         res.instruments.push('L.N. 247/2024 cl. 3; 8703.90.00 First Schedule; App. A Part IA item 8');
         res.regime = 'ev_standard_out_of_scope';
@@ -253,12 +253,12 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
       if (cifTtd <= cfg.evCifCeilingTtd) {
         res.dutyRate = 0; res.dutyTtd = 0; res.mvtTtd = 0; res.vatExempt = true;
         res.regime = 'ev_under_ceiling';
-        res.dutyLabel = 'Import duty — EXENTO (EV privado ≤ TT$400k CIF)';
+        res.dutyLabel = 'Import duty — EXEMPT (private EV ≤ TT$400k CIF)';
         res.dutyBasis = `CIF TT$${cifTtd.toFixed(2)} ≤ TT$400,000 (L.N. 479/2025 cl. 4B)`;
         res.instruments.push(
-          'Duty: L.N. 479/2025 cl. 7 insertando cl. 4B (sin duty ≤ TT$400k)',
-          'MVT: MVRTA Fourth Sched. para 9 + techo por L.N. 613/2026 cl. 2(c) (4-Ago-2026)',
-          'VAT: VAT Act Sched. 2 item 8(2), Act 16 of 2021 s.10 — exento',
+          'Duty: L.N. 479/2025 cl. 7 inserting cl. 4B (no duty ≤ TT$400k)',
+          'MVT: MVRTA Fourth Sched. para 9 + ceiling by L.N. 613/2026 cl. 2(c) (4 Aug 2026)',
+          'VAT: VAT Act Sched. 2 item 8(2), Act 16 of 2021 s.10 — exempt',
         );
         return res;
       }
@@ -266,38 +266,38 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
       res.dutyRate = cfg.evDutyOverCeiling;
       res.dutyTtd = round2(cifTtd * (cfg.evDutyOverCeiling / 100));
       res.regime = 'ev_over_ceiling';
-      res.dutyLabel = `Impuesto de importación (EV privado, CIF > TT$400k)`;
-      res.dutyBasis = `CIF × ${cfg.evDutyOverCeiling}% (Budget FY2026, en vigor 1-Ene-2026)`;
+      res.dutyLabel = `Import duty (private EV, CIF > TT$400k)`;
+      res.dutyBasis = `CIF × ${cfg.evDutyOverCeiling}% (Budget FY2026, in force 1 Jan 2026)`;
       const kw = v.motorKw ?? 0;
       const perKw = v.used ? cfg.evMvtUsedTtdPerKw : cfg.evMvtNewTtdPerKw;
       res.mvtTtd = round2(kw * perKw);
       if (kw > 0) {
         res.mvtLabel = `Motor Vehicle Tax (EV, ${kw} kW)`;
-        res.mvtBasis = `${kw} kW × TT$${perKw}/kW (App. A Part IA item 8, ${v.used ? 'usado' : 'nuevo'})`;
+        res.mvtBasis = `${kw} kW × TT$${perKw}/kW (App. A Part IA item 8, ${v.used ? 'used' : 'new'})`;
       } else {
-        warnings.push('EV sobre el techo TT$400k sin potencia del motor (kW): MVT por kW (App. A Part IA item 8) NO calculado — ingrese los kW.');
+        warnings.push('EV over the TT$400k ceiling without motor power (kW): MVT per kW (App. A Part IA item 8) NOT calculated — enter the kW.');
       }
       res.instruments.push(
-        'Duty: Budget FY2026 — 10% CIF > TT$400k (verificar mecánica de remisión en L.N. 479/2025 cl. 4B)',
-        'MVT: MVRTA App. A Part IA item 8 — TT$4/kW nuevo, TT$3/kW usado',
-        'Techo vigente 4-Ago-2026 por L.N. 613/2026 cl. 2(c)',
+        'Duty: Budget FY2026 — 10% CIF > TT$400k (verify the remission mechanics in L.N. 479/2025 cl. 4B)',
+        'MVT: MVRTA App. A Part IA item 8 — TT$4/kW new, TT$3/kW used',
+        'Ceiling in force 4 Aug 2026 per L.N. 613/2026 cl. 2(c)',
       );
       return res;
     }
     // Commercial EV: no relief (former 159/179 kW exemptions repealed)
-    warnings.push('EV comercial: sin alivios — las exenciones previas de 159/179 kW fueron derogadas (para 9 sustituido); duty 30% base + MVT por kW + VAT.');
+    warnings.push('Commercial EV: no relief — the former 159/179 kW exemptions were repealed (para 9 substituted); base 30% duty + MVT per kW + VAT.');
     res.dutyRate = cfg.dutyEv;
     res.dutyTtd = round2(cifTtd * (cfg.dutyEv / 100));
-    res.dutyLabel = 'Impuesto de importación (EV comercial 8703.90.00)';
-    res.dutyBasis = `CIF × ${cfg.dutyEv}% — sin alivio comercial`;
+    res.dutyLabel = 'Import duty (commercial EV 8703.90.00)';
+    res.dutyBasis = `CIF × ${cfg.dutyEv}% — no commercial relief`;
     const kw = v.motorKw ?? 0;
     const perKw = v.used ? cfg.evMvtUsedTtdPerKw : cfg.evMvtNewTtdPerKw;
     res.mvtTtd = round2(kw * perKw);
     if (kw > 0) {
-      res.mvtLabel = 'Motor Vehicle Tax (EV comercial, por kW)';
+      res.mvtLabel = 'Motor Vehicle Tax (commercial EV, per kW)';
       res.mvtBasis = `${kw} kW × TT$${perKw}/kW (App. A Part IA item 8)`;
     }
-    res.instruments.push('MVRTA Fourth Sched. para 9 (Act 16 of 2021 s.5) — sin alivio comercial');
+    res.instruments.push('MVRTA Fourth Sched. para 9 (Act 16 of 2021 s.5) — no commercial relief');
     res.regime = 'ev_commercial_no_relief';
     return res;
   }
@@ -309,39 +309,39 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
       const ccOk = v.engineCc > 0 && v.engineCc <= cfg.hybridMaxCc;
       const ageOk = age === null ? true : age <= cfg.hybridUsedAgeLimitYears;
       if (kwOk === null) {
-        warnings.push('Híbrido privado sin potencia del motor eléctrico (kW): la concesión L.N. 247/2024 exige motor ≤ 105 kW — ingrese los kW para verificar el alivio; aplicando tarifa estándar.');
+        warnings.push('Private hybrid without electric motor power (kW): the L.N. 247/2024 concession requires motor ≤ 105 kW — enter the kW to verify relief; applying standard rate.');
       } else if (ccOk && kwOk && ageOk) {
         const perCc = v.used ? cfg.hybridMvtUsedTtdPerCc : cfg.hybridMvtNewTtdPerCc;
         res.dutyRate = 0; res.dutyTtd = 0; res.regime = 'hybrid_ln247';
-        res.dutyLabel = 'Import duty — EXENTO (híbrido privado L.N. 247/2024)';
-        res.dutyBasis = `Criterios cumplidos: uso privado + ≤${cfg.hybridMaxCc}cc + motor eléctrico ≤${cfg.hybridMaxMotorKw} kW${v.used ? ` + edad ≤ ${cfg.hybridUsedAgeLimitYears} años` : ''} — alivio todo-o-nada`;
+        res.dutyLabel = 'Import duty — EXEMPT (private hybrid L.N. 247/2024)';
+        res.dutyBasis = `Criteria met: private use + ≤${cfg.hybridMaxCc}cc + electric motor ≤${cfg.hybridMaxMotorKw} kW${v.used ? ` + age ≤ ${cfg.hybridUsedAgeLimitYears} years` : ''} — all-or-nothing relief`;
         res.mvtTtd = round2(v.engineCc * perCc);
-        res.mvtLabel = 'Motor Vehicle Tax (híbrido, tarifa concesionada)';
-        res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc (App. A item 11, ${v.used ? 'usado ≤3 años' : 'nuevo'})`;
+        res.mvtLabel = 'Motor Vehicle Tax (hybrid, concessionary rate)';
+        res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc (App. A item 11, ${v.used ? 'used ≤3 years' : 'new'})`;
         res.instruments.push(
-          'Duty: L.N. 247/2024 cl. 2-3 — Ex 8703.40 a 8703.70 sin duty',
+          'Duty: L.N. 247/2024 cl. 2-3 — Ex 8703.40 to 8703.70 duty free',
           'MVT: MVRTA App. A items 10-11 (Act 30 of 2020 s.2(b))',
-          'VAT: 12.5% PAGABLE — la exención solo aplica a comerciales (VAT Sched 2 item 8(4) estrechado por Act 30 of 2020 s.6)',
+          'VAT: 12.5% PAYABLE — the exemption only applies to commercial (VAT Sched 2 item 8(4) narrowed by Act 30 of 2020 s.6)',
         );
         return res;
       } else {
-        warnings.push(`Híbrido privado NO cumple los criterios L.N. 247/2024 (≤${cfg.hybridMaxCc}cc${v.motorKw ? `, ≤${cfg.hybridMaxMotorKw} kW` : ''}${v.used ? `, ≤${cfg.hybridUsedAgeLimitYears} años` : ''}) — duty estándar completo aplica (todo-o-nada).`);
+        warnings.push(`Private hybrid does NOT meet L.N. 247/2024 criteria (≤${cfg.hybridMaxCc}cc${v.motorKw ? `, ≤${cfg.hybridMaxMotorKw} kW` : ''}${v.used ? `, ≤${cfg.hybridUsedAgeLimitYears} years` : ''}) — full standard duty applies (all-or-nothing).`);
       }
     } else {
       const ageOk = age === null ? true : age <= cfg.hybridUsedAgeLimitYears;
       if (v.engineCc > 0 && v.engineCc <= cfg.commHybridMvtExemptMaxCc && ageOk) {
         res.regime = 'hybrid_commercial_para10';
         res.mvtTtd = 0; res.vatExempt = true;
-        res.mvtLabel = 'Motor Vehicle Tax — EXENTO (híbrido comercial ≤1999cc)';
-        res.mvtBasis = 'MVRTA Fourth Sched. para 10: nuevo o usado ≤3 años';
-        res.instruments.push('MVT: MVRTA Fourth Sched. para 10 (Act 30 of 2020 s.2)', 'VAT: VAT Act Sched. 2 item 8(4) — exento (comercial)');
+        res.mvtLabel = 'Motor Vehicle Tax — EXEMPT (commercial hybrid ≤1999cc)';
+        res.mvtBasis = 'MVRTA Fourth Sched. para 10: new or used ≤3 years';
+        res.instruments.push('MVT: MVRTA Fourth Sched. para 10 (Act 30 of 2020 s.2)', 'VAT: VAT Act Sched. 2 item 8(4) — exempt (commercial)');
         // duty standard — falls through with res.dutyRate already set
       }
     }
     // Standard duty for hybrid engine (petrol brackets)
     res.dutyTtd = round2(cifTtd * (res.dutyRate / 100));
-    res.dutyLabel = `Impuesto de importación (híbrido, ${v.engineCc}cc)`;
-    res.dutyBasis = `CIF × ${res.dutyRate}% (tasas estándar gasolina)`;
+    res.dutyLabel = `Import duty (hybrid, ${v.engineCc}cc)`;
+    res.dutyBasis = `CIF × ${res.dutyRate}% (standard petrol rates)`;
     if (res.mvtTtd === 0 && res.regime !== 'hybrid_commercial_para10') {
       const perCc = mvtPerCc(v, cfg);
       if (v.engineCc > 0 && perCc > 0) {
@@ -361,39 +361,39 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
       const ageOk = age === null ? true : age <= cfg.cngUsedAgeLimitYears;
       if (ageOk) {
         res.mvtTtd = 0; res.vatExempt = true; res.regime = 'cng_commercial_para8';
-        res.mvtLabel = 'Motor Vehicle Tax — EXENTO (CNG comercial, nuevo o usado ≤8 años)';
-        res.mvtBasis = 'MVRTA Fourth Sched. para 8 — extension 3→8 años por L.N. 613/2026 cl. 2(b) (4-Ago-2026)';
+        res.mvtLabel = 'Motor Vehicle Tax — EXEMPT (commercial CNG, new or used ≤8 years)';
+        res.mvtBasis = 'MVRTA Fourth Sched. para 8 — extension 3→8 years by L.N. 613/2026 cl. 2(b) (4 Aug 2026)';
         if (v.engineCc > 0 && v.engineCc <= cfg.cngCommDutyExemptMaxCc) {
           res.dutyRate = 0; res.dutyTtd = 0;
-          res.dutyLabel = 'Import duty — EXENTO (CNG comercial ≤1599cc)';
-          res.dutyBasis = 'L.N. 479/2025 cl. 7 insertando cl. 4A (≤1599cc, nuevo o usado ≤8 años)';
+          res.dutyLabel = 'Import duty — EXEMPT (commercial CNG ≤1599cc)';
+          res.dutyBasis = 'L.N. 479/2025 cl. 7 inserting cl. 4A (≤1599cc, new or used ≤8 years)';
           res.instruments.push('Duty: L.N. 479/2025 cl. 4A');
         } else {
           res.dutyTtd = round2(cifTtd * (res.dutyRate / 100));
-          res.dutyLabel = `Impuesto de importación (CNG comercial, ${v.engineCc}cc)`;
-          res.dutyBasis = `CIF × ${res.dutyRate}% — cl. 4A cubre solo ≤1599cc`;
+          res.dutyLabel = `Import duty (commercial CNG, ${v.engineCc}cc)`;
+          res.dutyBasis = `CIF × ${res.dutyRate}% — cl. 4A covers ≤1599cc only`;
         }
-        res.instruments.push('MVT: MVRTA Fourth Sched. para 8; VAT: VAT Act Sched. 2 item 43 — exento');
+        res.instruments.push('MVT: MVRTA Fourth Sched. para 8; VAT: VAT Act Sched. 2 item 43 — exempt');
         return res;
       }
-      warnings.push(`CNG comercial usado de ${age} años: exención para 8 cubre nuevo o usado ≤${cfg.cngUsedAgeLimitYears} años — aplicando tarifas estándar.`);
+      warnings.push(`Used commercial CNG ${age} years old: the para 8 exemption covers new or used ≤${cfg.cngUsedAgeLimitYears} years — applying standard rates.`);
     } else {
-      // Private CNG: MVT concesionado item 10; duty & VAT estándar
+      // Private CNG: concessionary MVT item 10; standard duty & VAT
       const perCc = v.used ? cfg.cngPrivateMvtUsedTtdPerCc : cfg.cngPrivateMvtNewTtdPerCc;
       const ageOk = age === null ? true : age <= cfg.cngUsedAgeLimitYears;
-      // Duty estándar SIEMPRE aplica para CNG privado — se calcula aquí para no
-      // depender del bloque 'standard' (el régimen cambia a cng_private_item10).
+      // Standard duty ALWAYS applies for private CNG — computed here so this
+      // does not depend on the 'standard' block (the regime becomes cng_private_item10).
       res.dutyTtd = round2(cifTtd * (res.dutyRate / 100));
-      res.dutyLabel = `Impuesto de importación (CNG privado, ${v.engineCc}cc)`;
-      res.dutyBasis = `CIF × ${res.dutyRate}% (tasas estándar)`;
+      res.dutyLabel = `Import duty (private CNG, ${v.engineCc}cc)`;
+      res.dutyBasis = `CIF × ${res.dutyRate}% (standard rates)`;
       if (v.engineCc > 0 && v.engineCc <= cfg.hybridMaxCc && ageOk) {
         res.regime = 'cng_private_item10';
         res.mvtTtd = round2(v.engineCc * perCc);
-        res.mvtLabel = 'Motor Vehicle Tax (CNG privado ≤1599cc, concesionado)';
-        res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc (App. A item 10, ${v.used ? `usado ≤${cfg.cngUsedAgeLimitYears} años` : 'nuevo'})`;
-        res.instruments.push('MVT: MVRTA App. A Part I item 10; extensión 8 años por L.N. 613/2026 cl. 2(e)(i)', 'Duty y VAT estándar para CNG privado');
+        res.mvtLabel = 'Motor Vehicle Tax (private CNG ≤1599cc, concessionary)';
+        res.mvtBasis = `${v.engineCc}cc × TT$${perCc}/cc (App. A item 10, ${v.used ? `used ≤${cfg.cngUsedAgeLimitYears} years` : 'new'})`;
+        res.instruments.push('MVT: MVRTA App. A Part I item 10; 8-year extension by L.N. 613/2026 cl. 2(e)(i)', 'Standard duty and VAT for private CNG');
       } else if (!ageOk && v.engineCc <= cfg.hybridMaxCc) {
-        warnings.push(`CNG privado usado de ${age} años: tarifa concesionada item 10 cubre usado ≤${cfg.cngUsedAgeLimitYears} años — aplicando MVT estándar.`);
+        warnings.push(`Used private CNG ${age} years old: the item 10 concessionary rate covers used ≤${cfg.cngUsedAgeLimitYears} years — applying standard MVT.`);
       }
     }
   }
@@ -401,8 +401,8 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
   // ── Standard path (petrol / diesel / hybrid out of scope / CNG out of scope) ──
   if (res.regime === 'standard') {
     res.dutyTtd = round2(cifTtd * (res.dutyRate / 100));
-    const fuelLabel = v.fuel === 'diesel' ? 'diesel' : v.fuel === 'cng' ? 'CNG' : 'gasolina';
-    res.dutyLabel = `Impuesto de importación (${fuelLabel}, ${v.engineCc}cc)`;
+    const fuelLabel = v.fuel === 'diesel' ? 'diesel' : v.fuel === 'cng' ? 'CNG' : 'petrol';
+    res.dutyLabel = `Import duty (${fuelLabel}, ${v.engineCc}cc)`;
     res.dutyBasis = `CIF × ${res.dutyRate}%`;
     const perCc = mvtPerCc(v, cfg);
     if (v.engineCc > 0 && perCc > 0) {
@@ -411,7 +411,7 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
       res.mvtLabel = `Motor Vehicle Tax (${v.engineCc}cc × TT$${perCc}/cc${v.used ? ' × 75% foreign-used' : ''})`;
       res.mvtBasis = v.used ? `${v.engineCc} × ${perCc} × 0.75 (item 6)` : `${v.engineCc} × ${perCc}`;
     }
-    res.instruments.push(...stdInstruments, 'Foreign-used 75%: MVRTA App. A Part I item 6 (no aplica a returning nationals)');
+    res.instruments.push(...stdInstruments, 'Foreign-used 75%: MVRTA App. A Part I item 6 (does not apply to returning nationals)');
   }
 
   // ── Excise on used vehicles (FY2026: 8-10y 18%, 10-20y 35%) ──
@@ -419,7 +419,7 @@ function computeVehicle(v: VehicleInfo, cifTtd: number, inputCetRate: number, cf
     for (const b of cfg.exciseBrackets) {
       if (age > b.minAge && (b.maxAge === null || age <= b.maxAge)) {
         res.exciseTtd = round2(cifTtd * (b.rate / 100));
-        res.instruments.push(`Excise: ${b.rate}% para vehículos usados de ${b.minAge}-${b.maxAge ?? '+'} años (revisión FY2026: bajó de 20% a 18% en 8-10 años)`);
+        res.instruments.push(`Excise: ${b.rate}% for used vehicles ${b.minAge}-${b.maxAge ?? '+'} years (FY2026 review: lowered from 20% to 18% in the 8-10y bracket)`);
         break;
       }
     }
@@ -441,7 +441,7 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
   const cifTtd = round2(cifUsd * input.exchangeRate);
   lines.push({
     key: 'cif', label: 'CIF (Cost, Insurance & Freight)',
-    basis: `(FOB US$${input.fobUsd.toFixed(2)} + flete US$${input.freightUsd.toFixed(2)} + seguro US$${input.insuranceUsd.toFixed(2)}) × ${input.exchangeRate}`,
+    basis: `(FOB US$${input.fobUsd.toFixed(2)} + freight US$${input.freightUsd.toFixed(2)} + insurance US$${input.insuranceUsd.toFixed(2)}) × ${input.exchangeRate}`,
     amount: cifTtd, kind: 'value', order: order++,
   });
 
@@ -454,9 +454,9 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
 
   if (isVehicle) {
     if (!input.vehicle) {
-      warnings.push('HS 8703 requiere datos del vehículo (cilindrada, combustible, usado/nuevo, kW si es EV/híbrido). Usando tasa CET base.');
+      warnings.push('HS 8703 requires vehicle data (engine cc, fuel, used/new, kW if EV/hybrid). Using base CET rate.');
       dutyTtd = round2(cifTtd * (input.cetRate / 100));
-      lines.push({ key: 'duty', label: 'Impuesto de importación (CET base)', basis: `CIF × ${input.cetRate}%`, amount: dutyTtd, kind: 'tax', order: order++ });
+      lines.push({ key: 'duty', label: 'Import duty (base CET)', basis: `CIF × ${input.cetRate}%`, amount: dutyTtd, kind: 'tax', order: order++ });
     } else {
       const v = input.vehicle;
       const c = computeVehicle(v, cifTtd, input.cetRate, cfg, warnings);
@@ -470,12 +470,12 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
         lines.push({ key: 'mvt', label: c.mvtLabel, basis: c.mvtBasis ?? '', amount: mvtTtd, kind: 'tax', order: order++ });
       }
       if (exciseTtd > 0) {
-        lines.push({ key: 'excise', label: 'Excise duty (vehículo usado, por edad)', basis: `CIF × tasa del tramo de edad (FY2026)`, amount: exciseTtd, kind: 'tax', order: order++ });
+        lines.push({ key: 'excise', label: 'Excise duty (used vehicle, by age)', basis: `CIF × age-bracket rate (FY2026)`, amount: exciseTtd, kind: 'tax', order: order++ });
       }
     }
   } else {
     dutyTtd = round2(cifTtd * (input.cetRate / 100));
-    lines.push({ key: 'duty', label: 'Impuesto de importación (CET)', basis: `CIF × ${input.cetRate}%`, amount: dutyTtd, kind: 'tax', order: order++ });
+    lines.push({ key: 'duty', label: 'Import duty (CET)', basis: `CIF × ${input.cetRate}%`, amount: dutyTtd, kind: 'tax', order: order++ });
   }
 
   // 3) Environmental charges
@@ -488,20 +488,20 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
   if ((input.isSingleUsePlastics || input.hsCode.startsWith(HS_PLASTICS_PACKAGING_PREFIX) === false) && input.isSingleUsePlastics) {
     const plastic = round2(cifTtd * (cfg.singleUsePlasticsRate / 100));
     environmentalTtd += plastic;
-    lines.push({ key: 'plastics_tax', label: 'Impuesto plásticos de un solo uso', basis: `CIF × ${cfg.singleUsePlasticsRate}%`, amount: plastic, kind: 'tax', order: order++ });
+    lines.push({ key: 'plastics_tax', label: 'Single-use plastics tax', basis: `CIF × ${cfg.singleUsePlasticsRate}%`, amount: plastic, kind: 'tax', order: order++ });
   }
 
   // 4) Customs fees
   let feesTtd = 0;
   feesTtd += cfg.customsDeclarationFeeTtd;
-  lines.push({ key: 'declaration_fee', label: 'Customs declaration fee (C73)', basis: 'tarifa fija 2026', amount: cfg.customsDeclarationFeeTtd, kind: 'fee', order: order++ });
+  lines.push({ key: 'declaration_fee', label: 'Customs declaration fee (C73)', basis: 'fixed 2026 fee', amount: cfg.customsDeclarationFeeTtd, kind: 'fee', order: order++ });
 
   const containers = input.containers ?? [];
   if (containers.length > 0) {
     let exam = 0;
     const parts: string[] = [];
     for (const c of containers) {
-      if (c === 'lcl') continue; // LCL se factura por CBM en el puerto
+      if (c === 'lcl') continue; // LCL is billed per CBM at the port
       const is40 = c === '40ft' || c === '40hc';
       exam += is40 ? cfg.containerExamFee.size40 : cfg.containerExamFee.size20;
       parts.push(`${c}: TT$${is40 ? cfg.containerExamFee.size40 : cfg.containerExamFee.size20}`);
@@ -509,7 +509,7 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
     if (exam > 0) {
       exam = round2(exam);
       feesTtd += exam;
-      lines.push({ key: 'container_exam', label: 'Examen de contenedores', basis: parts.join(' + '), amount: exam, kind: 'fee', order: order++ });
+      lines.push({ key: 'container_exam', label: 'Container examination', basis: parts.join(' + '), amount: exam, kind: 'fee', order: order++ });
     }
   }
 
@@ -521,14 +521,14 @@ export function calculateLandedCost(input: LandedCostInput): LandedCostResult {
   if (vatExempt) {
     const reason = vehicleVatExempt
       ? concession?.regime === 'ev_under_ceiling'
-        ? 'EV privado ≤ TT$400k — VAT Act Sched. 2 item 8(2), Act 16 of 2021 s.10'
+        ? 'Private EV ≤ TT$400k — VAT Act Sched. 2 item 8(2), Act 16 of 2021 s.10'
         : concession?.regime === 'hybrid_commercial_para10'
-          ? 'Híbrido comercial ≤1999cc — VAT Act Sched. 2 item 8(4)'
+          ? 'Commercial hybrid ≤1999cc — VAT Act Sched. 2 item 8(4)'
           : concession?.regime === 'cng_commercial_para8'
-            ? 'CNG comercial — VAT Act Sched. 2 item 43'
-            : 'vehículo exento según régimen aplicado'
-      : 'partida exenta (Schedule 1 VAT Act)';
-    lines.push({ key: 'vat', label: 'VAT — EXENTO', basis: reason, amount: 0, kind: 'tax', order: order++ });
+            ? 'Commercial CNG — VAT Act Sched. 2 item 43'
+            : 'vehicle exempt under the applied regime'
+      : 'exempt heading (Schedule 1 VAT Act)';
+    lines.push({ key: 'vat', label: 'VAT — EXEMPT', basis: reason, amount: 0, kind: 'tax', order: order++ });
   } else {
     lines.push({
       key: 'vat', label: `VAT ${cfg.vatStandard}%`,

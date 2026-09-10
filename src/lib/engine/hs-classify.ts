@@ -42,7 +42,7 @@ function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // strip accents: distribución → distribucion
+    .replace(/[\u0300-\u036f]/g, '') // strip accents: café → cafe
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(t => t.length > 2 && !STOP.has(t))

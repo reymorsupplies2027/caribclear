@@ -11,7 +11,7 @@ import { Scale, ExternalLink, BookOpen, ArrowRight } from 'lucide-react';
 import { LEGAL_LIBRARY, CATEGORY_LABELS, filterLegalLibrary, type LegalCategory } from '@/lib/engine/legal-library';
 
 /**
- * Legal Library (Libro de leyes) — a consultable index of the instruments
+ * Legal Library — a consultable index of the instruments
  * that govern the broker's daily work: what each one governs, its practical
  * effect on the operator's actions, and the official source to verify.
  * Reference aid, not legal advice — the authoritative text is laws.gov.tt.

@@ -44,7 +44,7 @@ export async function GET() {
   } catch (err) { return guardError(err); }
 }
 
-/** POST /api/tower/rates — publish a new version of a rate table (Mando de Tasas). */
+/** POST /api/tower/rates — publish a new version of a rate table (Rate Command). */
 export async function POST(req: NextRequest) {
   try {
     const admin = await requireSuperAdmin(req);

@@ -108,7 +108,7 @@ function selectSegment(
   sMode: SegmentStats | null,
   overall: SegmentStats | null,
 ): { stats: SegmentStats; level: string } | null {
-  if (sFull && sFull.n >= DIRECT_SAMPLE_MIN) return { stats: sFull, level: 'mode+lane+contenedores' };
+  if (sFull && sFull.n >= DIRECT_SAMPLE_MIN) return { stats: sFull, level: 'mode+lane+containers' };
   const l2 = blend(sFull, sLane, 3);
   if (sLane && sLane.n >= DIRECT_SAMPLE_MIN) return { stats: l2 ?? sLane, level: 'mode+lane' };
   const l1 = blend(l2, sMode, 3);
@@ -136,8 +136,8 @@ export function forecastDemurrage(history: HistoryRow[], target: ShipmentUnderFo
 
   const segmentLabel = [
     target.mode,
-    target.lane ?? 'lane sin datos',
-    bucket === 0 ? 'LCL/bulk' : bucket === 1 ? '1 contenedor' : `${target.containerCount} contenedores`,
+    target.lane ?? 'lane without data',
+    bucket === 0 ? 'LCL/bulk' : bucket === 1 ? '1 container' : `${target.containerCount} containers`,
   ].join(' · ');
 
   if (!picked || picked.stats.n === 0) {
@@ -153,11 +153,11 @@ export function forecastDemurrage(history: HistoryRow[], target: ShipmentUnderFo
       worstCaseDemurrageTtd: null,
       riskLevel: 'unknown',
       recommendations: [
-        'Sin historial suficiente (se necesitan embarques liberados con fechas de inicio y fin de aduana).',
-        'Aun así: presente el C73 y documentos ANTES de la llegada — el pico de demora es el trámite inicial.',
-        target.hasPermitPending ? 'Este embarque tiene permisos pendientes: son la causa #1 de estadía extendida.' : 'Confirme permisos/regulaciones desde ahora (matriz T&T).',
+        'Insufficient history (released shipments with customs start and end dates are needed).',
+        'Either way: file the C73 and documents BEFORE arrival — the peak delay is the initial paperwork.',
+        target.hasPermitPending ? 'This shipment has pending permits: they are the #1 cause of extended dwell.' : 'Confirm permits/regulations from now (T&T matrix).',
       ],
-      note: `El sistema necesita al menos 1 embarque liberado; hay ${history.length} en el historial. La predicción se activa sola con los primeros cierres.`,
+      note: `The system needs at least 1 released shipment; there are ${history.length} in history. Forecasting activates by itself with the first closed clearances.`,
     };
   }
 
@@ -188,29 +188,29 @@ export function forecastDemurrage(history: HistoryRow[], target: ShipmentUnderFo
 
   // Recommendations — deterministic rules over real facts
   if (target.status === 'order_placed' || target.status === 'sailed' || target.status === 'in_transit') {
-    recs.push(`Embarque aún en ruta: prepare y presente la declaración (C73) antes de la llegada — históricamente este trámite consume la mayor parte de los ${Math.round(p50)} días típicos.`);
+    recs.push(`Shipment still in transit: prepare and file the declaration (C73) before arrival — historically this step consumes most of the typical ${Math.round(p50)} days.`);
   }
   if (target.hasPermitPending) {
-    recs.push('Permisos pendientes: este segmento históricamente se estanca por regulaciones — persiga la aprobación HOY (CFO/TTBS/EMA según partida).');
+    recs.push('Pending permits: this segment historically stalls on regulations — chase the approval TODAY (CFO/TTBS/EMA per heading).');
   }
   if (freeDaysRemaining !== null && freeDaysRemaining <= 3 && freeDaysRemaining > 0) {
-    recs.push(`Quedan ${freeDaysRemaining} días libres: programe el examen y el pago de impuestos ahora para retirar antes del día ${target.freeDays}.`);
+    recs.push(`${freeDaysRemaining} free days left: schedule the exam and duty payment now to collect before day ${target.freeDays}.`);
   }
   if (freeDaysRemaining !== null && freeDaysRemaining <= 0) {
-    recs.push(`Días libres agotados: cada día adicional cuesta TT$${target.perDayTtd.toLocaleString('en-TT')} — priorice el retiro de este contenedor sobre embarques nuevos.`);
+    recs.push(`Free days exhausted: each extra day costs TT$${target.perDayTtd.toLocaleString('en-TT')} — prioritize collecting this container over new bookings.`);
   }
   if (p90 - p50 >= 4) {
-    recs.push(`Alta variabilidad en esta ruta (p90 = ${Math.round(p90)} días vs mediana ${Math.round(p50)}): presupueste colchón de ${Math.round(p90 - p50)} días extra en sus cotizaciones.`);
+    recs.push(`High variability on this lane (p90 = ${Math.round(p90)} days vs median ${Math.round(p50)}): budget a buffer of ${Math.round(p90 - p50)} extra days in your quotes.`);
   }
   if (recs.length === 0) {
-    recs.push(`Ritmo típico del segmento: liberación en ~${Math.round(p50)} días (p75 ${Math.round(p75)}). Con ${target.freeDays} días libres el margen es suficiente — mantenga los documentos al día.`);
+    recs.push(`Typical segment pace: release in ~${Math.round(p50)} days (p75 ${Math.round(p75)}). With ${target.freeDays} free days the margin is sufficient — keep documents up to date.`);
   }
 
   return {
     sufficientHistory: true,
     sampleSize: history.length,
     segmentSampleSize: picked.stats.n,
-    segmentLabel: `${segmentLabel} [nivel: ${picked.level}]`,
+    segmentLabel: `${segmentLabel} [level: ${picked.level}]`,
     predictedClearanceDays: { p50, p75, p90 },
     daysElapsedSinceStart: daysElapsed,
     freeDaysRemaining,
@@ -218,6 +218,6 @@ export function forecastDemurrage(history: HistoryRow[], target: ShipmentUnderFo
     worstCaseDemurrageTtd,
     riskLevel,
     recommendations: recs,
-    note: `Estadística sobre ${history.length} embarque(s) liberados del propio tenant (segmento: ${segmentLabel}, n=${picked.stats.n}). No es una garantía.`,
+    note: `Statistics over ${history.length} released shipment(s) of this very tenant (segment: ${segmentLabel}, n=${picked.stats.n}). Not a guarantee.`,
   };
 }

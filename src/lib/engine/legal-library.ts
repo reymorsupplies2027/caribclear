@@ -1,5 +1,5 @@
 /**
- * CaribClear — Legal Library (Libro de leyes).
+ * CaribClear — Legal Library.
  *
  * A consultable index of the instruments that govern the broker's daily work,
  * with the practical effect of each one and where to verify the official text.

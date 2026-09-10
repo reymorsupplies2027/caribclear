@@ -84,8 +84,8 @@ export async function scanAlerts(tenantId: string): Promise<number> {
         if (!existing) {
           await notify({
             tenantId, type: 'demurrage', severity: daysLeft <= 1 ? 'critical' : 'warning',
-            title: `Demurrage: ${daysLeft === 0 ? 'HOY' : `${daysLeft} día(s)`} terminan días libres`,
-            body: `Embarque ${s.reference}: quedan ${daysLeft} día(s) de gracia. Penalty aplica después.`,
+            title: `Demurrage: free days end ${daysLeft === 0 ? 'TODAY' : `in ${daysLeft} day(s)`}`,
+            body: `Shipment ${s.reference}: ${daysLeft} grace day(s) left. Penalty applies after.`,
             shipmentId: s.id,
           });
           created++;
@@ -100,8 +100,8 @@ export async function scanAlerts(tenantId: string): Promise<number> {
       if (!existing) {
         await notify({
           tenantId, type: 'eta', severity: 'info',
-          title: `ETA vencida en ${s.reference}`,
-          body: 'La fecha estimada de llegada ya pasó — actualiza el estado del embarque.',
+          title: `ETA passed on ${s.reference}`,
+          body: 'The estimated arrival date has passed — update the shipment status.',
           shipmentId: s.id,
         });
         created++;
@@ -121,8 +121,8 @@ export async function scanAlerts(tenantId: string): Promise<number> {
     if (!existing) {
       await notify({
         tenantId, type: 'permit_expiry', severity: 'warning',
-        title: `Documento por vencer: ${d.title}`,
-        body: `Vence el ${d.expiryDate?.toISOString().slice(0, 10) ?? '—'}. Renueva para evitar penalidades.`,
+        title: `Document expiring: ${d.title}`,
+        body: `Expires on ${d.expiryDate?.toISOString().slice(0, 10) ?? '—'}. Renew to avoid penalties.`,
       });
       created++;
     }

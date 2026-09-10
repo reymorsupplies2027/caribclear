@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await notify({
         tenantId: s.tenantId, shipmentId: id, type: 'system',
         title: `${updated.reference}: ${updated.status.replace(/_/g, ' ')}`,
-        body: `El estado de tu embarque cambió a "${updated.status.replace(/_/g, ' ')}".`,
+        body: `Your shipment status changed to "${updated.status.replace(/_/g, ' ')}".`,
         channels: ['in_app'],
       });
     }

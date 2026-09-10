@@ -140,7 +140,7 @@ function CreateForm({ items, setItems, totals, vat, onDone }: {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5"><Label>Type</Label>
           <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.type} onChange={e => set('type', e.target.value)}>
-            <option value="quote">Quote (cotización)</option><option value="invoice">Invoice (factura)</option>
+            <option value="quote">Quote</option><option value="invoice">Invoice</option>
           </select></div>
         <div className="space-y-1.5"><Label>Client</Label>
           <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.clientId} onChange={e => set('clientId', e.target.value)}>

@@ -106,7 +106,7 @@ const TARGET_SEA_PEX: ShipmentUnderForecast = {
     `demurrage esperado > 0 porque mediana (~8d) > 5 días libres: TT$${f.expectedDemurrageTtd}`);
   ok(f.worstCaseDemurrageTtd! >= f.expectedDemurrageTtd!, 'peor caso ≥ esperado');
   ok(f.riskLevel === 'medium' || f.riskLevel === 'high', `riesgo elevado (${f.riskLevel})`);
-  ok(f.recommendations.some(r => r.toLowerCase().includes('c73') || r.toLowerCase().includes('declaración')), 'recomendación de C73 pre-llegada');
+  ok(f.recommendations.some(r => r.toLowerCase().includes('c73') || r.toLowerCase().includes('declaration')), 'recomendación de C73 pre-llegada');
 }
 {
   const targetAir: ShipmentUnderForecast = { ...TARGET_SEA_PEX, mode: 'air', lane: 'MIA→POS', containerCount: 0 };
@@ -124,7 +124,7 @@ const TARGET_SEA_PEX: ShipmentUnderForecast = {
   ok(f.freeDaysRemaining === -5, `días libres restantes = -5 (obtuvo ${f.freeDaysRemaining})`);
   ok(f.riskLevel === 'high', 'riesgo high con días libres agotados');
   ok(f.recommendations.some(r => r.includes('350')), 'recomendación menciona el costo TT$350/día real');
-  ok(f.recommendations.some(r => r.toLowerCase().includes('permiso')), 'recomendación por permiso pendiente');
+  ok(f.recommendations.some(r => r.toLowerCase().includes('permit')), 'recomendación por permiso pendiente');
 }
 {
   // Historial insuficiente → honesto, sin números inventados

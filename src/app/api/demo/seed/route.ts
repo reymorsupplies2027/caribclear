@@ -161,7 +161,7 @@ async function seed() {
       itemsJson: JSON.stringify([...fees, ...disb]),
       feesTotal, disbursementsTotal: disbTotal, vatRate: 12.5, vatTotal,
       total: round2(feesTotal + disbTotal + vatTotal),
-      validUntil: daysAhead(14), notes: 'Clearance + delivery Chaguanas. Vehículo 1500cc foreign-used.',
+      validUntil: daysAhead(14), notes: 'Clearance + delivery Chaguanas. 1500cc foreign-used vehicle.',
     },
   });
   await db.quote.create({
@@ -177,9 +177,9 @@ async function seed() {
 
   // Notifications
   await db.notification.createMany({ data: [
-    { tenantId: tenant.id, type: 'demurrage', severity: 'critical', title: 'Demurrage: 1 día termina días libres', body: 'Embarque CC-2026-0003 (vehículo): penalty TT$350/día desde mañana.', shipmentId: s3.id },
-    { tenantId: tenant.id, type: 'eta', severity: 'info', title: 'ETA en 3 días — CC-2026-0002', body: 'ALGOL llega en 3 días. Prepara CFO permit y transporte refrigerado.', shipmentId: s2.id },
-    { tenantId: tenant.id, type: 'quote_approved', severity: 'info', title: 'Cotización enviada al cliente', body: 'QT-2026-0001 esperando aprobación de Sanchez Home & Auto.', shipmentId: s3.id },
+    { tenantId: tenant.id, type: 'demurrage', severity: 'critical', title: 'Demurrage: free days end in 1 day', body: 'Shipment CC-2026-0003 (vehicle): penalty TT$350/day from tomorrow.', shipmentId: s3.id },
+    { tenantId: tenant.id, type: 'eta', severity: 'info', title: 'ETA in 3 days — CC-2026-0002', body: 'ALGOL arrives in 3 days. Prepare the CFO permit and refrigerated transport.', shipmentId: s2.id },
+    { tenantId: tenant.id, type: 'quote_approved', severity: 'info', title: 'Quote sent to client', body: 'QT-2026-0001 awaiting approval by Sanchez Home & Auto.', shipmentId: s3.id },
   ] });
 
   // ── Platform billing history for demo tenant (landlord view) ──
@@ -189,7 +189,7 @@ async function seed() {
     { tenantId: tenant.id, amount: 149, currency: 'USD', status: 'overdue', period: `${year}-09`, dueDate: daysAgo(3) },
   ] });
 
-  // ── Regional tenants (Torre de Control — multi-region occupancy) ──
+  // ── Regional tenants (control tower — multi-region occupancy) ──
   const regionalTenants = [
     {
       name: 'Kingston Freight Partners', slug: 'kingston-freight-partners', region: 'Jamaica', city: 'Kingston',

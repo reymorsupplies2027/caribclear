@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           data: {
             tenantId: s.tenantId,
             shipmentId: (body.shipmentId as string) || null,
-            name: String(body.name || `Cálculo ${rateSet.country} ${hs.code} ${new Date().toISOString().slice(0, 10)}`),
+            name: String(body.name || `Calculation ${rateSet.country} ${hs.code} ${new Date().toISOString().slice(0, 10)}`),
             hsCode: hs.code, mode: String(body.mode || 'sea'),
             fobUsd: Number(body.fobUsd) || 0,
             freightUsd: Number(body.freightUsd) || 0,
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
       data: {
         tenantId: s.tenantId,
         shipmentId: (body.shipmentId as string) || null,
-        name: String(body.name || `Cálculo ${hs.code} ${new Date().toISOString().slice(0, 10)}`),
+        name: String(body.name || `Calculation ${hs.code} ${new Date().toISOString().slice(0, 10)}`),
         hsCode: hs.code, mode: String(body.mode || 'sea'),
         fobUsd: result.cifUsd > 0 ? Number(body.fobUsd) : 0,
         freightUsd: Number(body.freightUsd) || 0,

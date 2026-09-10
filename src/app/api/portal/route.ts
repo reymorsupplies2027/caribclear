@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
     const { notify } = await import('@/lib/notify');
     await notify({
       tenantId: s.tenantId, shipmentId: quote.shipmentId, type: 'quote_approved', severity: 'info',
-      title: `${quote.number} aprobada por ${s.name}`,
-      body: `El cliente aprobó TT$${quote.total.toLocaleString()}. Genera la factura o avanza la operación.`,
+      title: `${quote.number} approved by ${s.name}`,
+      body: `The client approved TT$${quote.total.toLocaleString()}. Generate the invoice or move the operation forward.`,
     });
 
     return ok({ quote: updated });

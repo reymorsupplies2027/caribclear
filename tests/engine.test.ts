@@ -60,7 +60,7 @@ console.log('── 4. Vehículo usado gasolina 1500cc (caso masivo T&T, item 6 
   ok(r.mvtTtd === round2(1500 * 5 * 0.75), 'MVT = 1500cc × $5 × 75% foreign-used (item 6) = 5,625');
   ok(r.vatTtd === round2((81600 + r.dutyTtd + r.mvtTtd) * 0.125), 'VAT base incluye MVT (VAT Act Sched 2(8)(4))');
   ok(r.exciseTtd === 0, 'sin excise: 4-5 años < tramo 8-10y');
-  ok(r.warnings.length === 0 || r.warnings.every(w => !w.includes('NO importable')), 'vehículo 2021 dentro del límite de 6 años');
+  ok(r.warnings.length === 0 || r.warnings.every(w => !w.includes('NOT importable')), 'vehículo 2021 dentro del límite de 6 años');
 }
 console.log('── 5. Vehículo usado gasolina 2000cc ──');
 {
@@ -115,7 +115,7 @@ console.log('── 10. EV usado >2 años — fuera del alcance de la concesión
   });
   ok(r.dutyTtd === round2(81600 * 0.30), 'EV usado 3 años → duty estándar 30% (8703.90.00)');
   ok(r.mvtTtd === 100 * 3, 'MVT = 100 kW × TT$3/kW usado');
-  ok(r.warnings.some(w => w.includes('EV usado')), 'warning de alcance de concesión presente');
+  ok(r.warnings.some(w => w.includes('Used EV')), 'warning de alcance de concesión presente');
 }
 console.log('── 11. EV comercial — sin alivios ──');
 {
@@ -146,7 +146,7 @@ console.log('── 13. Híbrido privado con motor >105 kW — pierde todo ─�
   });
   ok(r.dutyTtd === round2(81600 * 0.25), 'duty estándar completo (todo-o-nada L.N. 247/2024)');
   ok(r.mvtTtd === round2(1496 * 5), 'MVT estándar item 1: 1496cc × $5 (nuevo, sin 75%)');
-  ok(r.warnings.some(w => w.includes('NO cumple')), 'warning de criterios incumplidos');
+  ok(r.warnings.some(w => w.includes('NOT meet')), 'warning de criterios incumplidos');
 }
 console.log('── 14. Híbrido privado sin kW declarado — no se puede verificar ──');
 {
@@ -205,9 +205,9 @@ console.log('── 18. Returning national — duty exento s.45A, MVT TARIFA COM
 console.log('── 19. Vehículo >6 años (privado) genera warning crítico; comercial >10 ──');
 {
   const r = run({ hsCode: '8703', cetRate: 35, vehicle: { fuel: 'petrol', engineCc: 1800, used: true, yearOfManufacture: 2018 } });
-  ok(r.warnings.some(w => w.includes('NO importable')), 'warning: supera límite 6 años privado');
+  ok(r.warnings.some(w => w.includes('NOT importable')), 'warning: supera límite 6 años privado');
   const rc = run({ hsCode: '8703', cetRate: 35, vehicle: { fuel: 'petrol', engineCc: 2500, used: true, yearOfManufacture: 2018, vehicleUse: 'commercial' } });
-  ok(!rc.warnings.some(w => w.includes('NO importable')), 'comercial 8 años DENTRO del límite de 10 años (Budget FY2026)');
+  ok(!rc.warnings.some(w => w.includes('NOT importable')), 'comercial 8 años DENTRO del límite de 10 años (Budget FY2026)');
 }
 console.log('── 20. Excise usado 8-10 años 18% / 10-20 años 35% (FY2026) ──');
 {

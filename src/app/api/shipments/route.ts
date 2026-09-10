@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
     const { notify } = await import('@/lib/notify');
     await notify({
       tenantId: s.tenantId, shipmentId: shipment.id, type: 'system',
-      title: `Embarque ${shipment.reference} creado`,
-      body: `${shipment.goodsDescription.slice(0, 80)} — estado inicial: orden colocada.`,
+      title: `Shipment ${shipment.reference} created`,
+      body: `${shipment.goodsDescription.slice(0, 80)} — initial status: order placed.`,
     });
 
     return ok({ shipment }, 201);

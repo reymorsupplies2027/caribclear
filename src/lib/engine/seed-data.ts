@@ -11,7 +11,7 @@ export interface HsSeedRow {
 }
 
 export const HS_SEED: HsSeedRow[] = [
-  { code: '0106', description: 'Live animals — other', chapter: '01', cetRate: 0, vatExempt: true, notes: 'CFO permit casi siempre requerido' },
+  { code: '0106', description: 'Live animals — other', chapter: '01', cetRate: 0, vatExempt: true, notes: 'CFO permit almost always required' },
   { code: '0302', description: 'Fish, fresh or chilled', chapter: '03', unit: 'kg', cetRate: 15, notes: 'CFO (Chief Food Officer) import permit' },
   { code: '0406', description: 'Cheese and curd', chapter: '04', unit: 'kg', cetRate: 20, notes: 'CFO permit; CARICOM preferential rates apply' },
   { code: '0710', description: 'Vegetables, frozen', chapter: '07', unit: 'kg', cetRate: 15, notes: 'CFO permit' },
@@ -43,7 +43,7 @@ export const HS_SEED: HsSeedRow[] = [
   { code: '8517', description: 'Phones, smartphones', chapter: '85', cetRate: 0, vatExempt: true },
   { code: '8528', description: 'Televisions, monitors', chapter: '85', cetRate: 20, notes: 'TTBS conformity for electrical goods' },
   { code: '8544', description: 'Insulated wire and cable', chapter: '85', unit: 'kg', cetRate: 10 },
-  { code: '8703', description: 'Motor cars (petrol/diesel/EV/hybrid/CNG) — see cc brackets', chapter: '87', unit: 'pce', cetRate: 25, notes: 'Duty por cilindrada: petrol ≤1599cc 25%, ≤2000cc 35%, ≤3000cc 60%, >3000cc 67.5% · diesel ≤1500cc 35%, ≤2000cc 40%, ≤2500cc 60%, >2500cc 67.5% · MVT por cc (foreign-used 75%) · EV privado ≤TT$400k CIF: 0 duty/MVT/VAT (L.N. 479/2025 cl.4B) · híbrido ≤1599cc+≤105kW: 0 duty (L.N. 247/2024) · usados ≤6 años (Budget FY2026)' },
+  { code: '8703', description: 'Motor cars (petrol/diesel/EV/hybrid/CNG) — see cc brackets', chapter: '87', unit: 'pce', cetRate: 25, notes: 'Duty by cc: petrol ≤1599cc 25%, ≤2000cc 35%, ≤3000cc 60%, >3000cc 67.5% · diesel ≤1500cc 35%, ≤2000cc 40%, ≤2500cc 60%, >2500cc 67.5% · MVT per cc (foreign-used 75%) · private EV ≤TT$400k CIF: 0 duty/MVT/VAT (L.N. 479/2025 cl.4B) · hybrid ≤1599cc+≤105kW: 0 duty (L.N. 247/2024) · used ≤6 years (Budget FY2026)' },
   { code: '8704', description: 'Goods transport trucks', chapter: '87', unit: 'pce', cetRate: 10, notes: 'Depends on GVW bracket' },
   { code: '8708', description: 'Motor vehicle parts & accessories', chapter: '87', cetRate: 30, notes: 'T&T national deviation for auto parts' },
   { code: '8711', description: 'Motorcycles', chapter: '87', unit: 'pce', cetRate: 30 },
@@ -62,37 +62,37 @@ export interface PermitSeedRow {
 export const PERMITS_SEED: PermitSeedRow[] = [
   {
     category: 'cfo_agro', title: 'CFO Import Permit (food/plants/animals)', authority: 'Chief Food Officer — Ministry of Health',
-    description: 'Requerido para alimentos, carnes, lácteos, plantas y productos agrícolas. Se solicita por embarque ANTES de zarpar; vigencia típica 3 meses.',
+    description: 'Required for foods, meats, dairy, plants and agricultural products. Requested per shipment BEFORE sailing; typical validity 3 months.',
     hsPrefixes: '01,02,03,04,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23',
     bizLinkUrl: 'https://www.ttbizlink.gov.tt', sortOrder: 1,
   },
   {
     category: 'ttbs', title: 'TTBS Standards Conformity', authority: 'Trinidad & Tobago Bureau of Standards',
-    description: 'Productos regulados (eléctricos, LPG, cemento, juguetes, cables) requieren cumplimiento de norma TTS. Verificación documental o inspección.',
+    description: 'Regulated products (electricals, LPG, cement, toys, cables) require TTS standards compliance. Documentary check or inspection.',
     hsPrefixes: '2523,84,85,94,95',
     bizLinkUrl: 'https://www.ttbizlink.gov.tt', sortOrder: 2,
   },
   {
     category: 'ema_cec', title: 'EMA Certificate of Environmental Clearance (CEC)', authority: 'Environmental Management Authority',
-    description: 'Actividades/productos con impacto ambiental designados (neumáticos usados, químicos, equipos industriales) requieren CEC.',
+    description: 'Designated activities/products with environmental impact (used tyres, chemicals, industrial equipment) require a CEC.',
     hsPrefixes: '26,27,28,38,40,84,85,87',
     bizLinkUrl: 'https://www.ema.co.tt', sortOrder: 3,
   },
   {
     category: 'drug_inspectorate', title: 'Drug Inspectorate Import Authorisation', authority: 'Chemicals Division — Ministry of National Security',
-    description: 'Medicamentos, precursores químicos y sustancias controladas requieren autorización previa del Inspectorato.',
+    description: 'Medicines, chemical precursors and controlled substances require prior authorisation from the Inspectorate.',
     hsPrefixes: '29,30,54,55',
     bizLinkUrl: 'https://www.ttbizlink.gov.tt', sortOrder: 4,
   },
   {
     category: 'chemicals', title: 'Pesticides & Toxic Chemicals Board Approval', authority: 'Pesticides & Toxic Chemicals Board',
-    description: 'Plaguicidas, desinfectantes y tóxicos domésticos: registro del producto + permiso de importación por embarque.',
+    description: 'Pesticides, disinfectants and household toxics: product registration + import permit per shipment.',
     hsPrefixes: '3808',
     bizLinkUrl: 'https://www.ttbizlink.gov.tt', sortOrder: 5,
   },
   {
     category: 'other', title: 'Used Vehicle Pre-Shipment Inspection', authority: 'T&T Customs / approved inspection body',
-    description: 'Vehículos usados ≤6 años (Budget FY2026): inspección pre-embarque en origen + título y registro. Verificar límite de edad y concesión EV/hybrid.',
+    description: 'Used vehicles ≤6 years (Budget FY2026): pre-shipment inspection at origin + title and registration. Verify the age limit and the EV/hybrid concession.',
     hsPrefixes: '8703,8704,8711',
     bizLinkUrl: 'https://www.customs.gov.tt', sortOrder: 6,
   },
@@ -106,13 +106,13 @@ export const DEMURRAGE_PRESETS = {
 };
 
 export const SHIPMENT_STATUSES = [
-  { key: 'order_placed', label: 'Order placed', es: 'Orden colocada', pct: 10 },
-  { key: 'sailed', label: 'Sailed', es: 'Zarpado', pct: 25 },
-  { key: 'in_transit', label: 'In transit', es: 'En tránsito', pct: 45 },
-  { key: 'arrived', label: 'Arrived', es: 'Arribado', pct: 65 },
-  { key: 'unloaded', label: 'Discharged', es: 'Descargado', pct: 80 },
-  { key: 'in_customs', label: 'In customs', es: 'En aduana', pct: 92 },
-  { key: 'released', label: 'Released', es: 'Liberado', pct: 100 },
+  { key: 'order_placed', label: 'Order placed', pct: 10 },
+  { key: 'sailed', label: 'Sailed', pct: 25 },
+  { key: 'in_transit', label: 'In transit', pct: 45 },
+  { key: 'arrived', label: 'Arrived', pct: 65 },
+  { key: 'unloaded', label: 'Discharged', pct: 80 },
+  { key: 'in_customs', label: 'In customs', pct: 92 },
+  { key: 'released', label: 'Released', pct: 100 },
 ] as const;
 
 export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number]['key'];

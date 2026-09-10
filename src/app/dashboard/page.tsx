@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Ship, FolderLock, AlertTriangle, DollarSign, Plus, ArrowRight, CircleCheck, Timer, ListChecks, AlarmClock, Anchor, OctagonX, FileText, ClipboardCheck, FileClock, Banknote, Filter, ShieldAlert } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ForecastPanel } from './forecast-panel';
 
 interface Shipment {
   id: string; reference: string; status: string; goodsDescription: string;
@@ -150,6 +151,9 @@ export default function DashboardPage() {
           <DayPlan tasks={wq.tasks} summary={wq.summary} />
         </div>
       )}
+
+      {/* ── Demurrage forecast: real stats over the tenant's own released cargo ── */}
+      <ForecastPanel />
 
       {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

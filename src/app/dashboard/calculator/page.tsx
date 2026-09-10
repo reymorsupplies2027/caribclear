@@ -22,8 +22,9 @@ const LEGAL_LINE_MAP: Record<string, string> = {
 interface CostLine { key: string; label: string; basis: string; amount: number; kind: string; order: number }
 interface Result {
   cifUsd: number; cifTtd: number; exchangeRate: number;
-  dutyTtd: number; mvtTtd: number; vatTtd: number; feesTtd: number; environmentalTtd: number;
+  dutyTtd: number; mvtTtd: number; exciseTtd: number; vatTtd: number; feesTtd: number; environmentalTtd: number;
   totalTtd: number; landedOverCifPct: number; lines: CostLine[]; warnings: string[];
+  vehicleConcession?: { regime: string; instruments: string[] };
 }
 interface HsCode { id: string; code: string; description: string; cetRate: number; vatExempt: boolean; notes: string | null }
 interface Calc { id: string; name: string; hsCode: string; totalTtd: number; createdAt: string }
@@ -37,6 +38,7 @@ export default function CalculatorPage() {
   const [form, setForm] = useState({
     hsCode: '8703', fobUsd: '9500', freightUsd: '1800', insuranceUsd: '190',
     exchangeRate: '', isVehicle: false, vehicleCc: '1500', vehicleFuel: 'petrol', vehicleUsed: true, vehicleYear: '2021',
+    vehicleKw: '', vehicleUse: 'private', vehicleReturning: false,
     containers: '1x40ft', tyreCount: '', isOnlinePurchase: false, isPlastics: false, name: '',
   });
   const set = (k: string, v: string | boolean) => setForm(p => ({ ...p, [k]: v }));
@@ -63,6 +65,9 @@ export default function CalculatorPage() {
       if (form.isVehicle) payload.vehicle = {
         fuel: form.vehicleFuel, engineCc: Number(form.vehicleCc) || 0,
         used: form.vehicleUsed, yearOfManufacture: form.vehicleYear ? Number(form.vehicleYear) : undefined,
+        motorKw: form.vehicleKw ? Number(form.vehicleKw) : undefined,
+        vehicleUse: form.vehicleUse === 'commercial' ? 'commercial' : 'private',
+        returningNational: form.vehicleReturning,
       };
       if (persist) payload.name = form.name || undefined;
       const data = await api<{ result: Result }>(persist ? '/api/costs' : '/api/costs?preview=1', { method: 'POST', body: JSON.stringify(payload) });
@@ -98,17 +103,33 @@ export default function CalculatorPage() {
             <Label htmlFor="veh" className="font-normal">Vehicle (HS 8703) — apply cc brackets & Motor Vehicle Tax</Label>
           </div>
           {form.isVehicle && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-lg border p-3 bg-teal-600/5">
-              <div className="space-y-1"><Label className="text-xs">Fuel</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.vehicleFuel} onChange={e => set('vehicleFuel', e.target.value)}>
-                  <option value="petrol">Petrol</option><option value="diesel">Diesel</option><option value="ev">EV</option><option value="hybrid">Hybrid</option>
-                </select></div>
-              <Field k="vehicleCc" label="Engine cc" v={form} set={set} />
-              <div className="space-y-1"><Label className="text-xs">Condition</Label>
-                <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.vehicleUsed ? 'used' : 'new'} onChange={e => set('vehicleUsed', e.target.value === 'used')}>
-                  <option value="used">Foreign-used</option><option value="new">New</option>
-                </select></div>
-              <Field k="vehicleYear" label="Year" v={form} set={set} />
+            <div className="space-y-2 rounded-lg border p-3 bg-teal-600/5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="space-y-1"><Label className="text-xs">Fuel</Label>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.vehicleFuel} onChange={e => set('vehicleFuel', e.target.value)}>
+                    <option value="petrol">Petrol</option><option value="diesel">Diesel</option><option value="ev">Electric (EV)</option><option value="hybrid">Hybrid</option><option value="cng">CNG</option>
+                  </select></div>
+                <Field k="vehicleCc" label="Engine cc" v={form} set={set} />
+                <div className="space-y-1"><Label className="text-xs">Condition</Label>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.vehicleUsed ? 'used' : 'new'} onChange={e => set('vehicleUsed', e.target.value === 'used')}>
+                    <option value="used">Foreign-used</option><option value="new">New</option>
+                  </select></div>
+                <Field k="vehicleYear" label="Year" v={form} set={set} />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {(form.vehicleFuel === 'ev' || form.vehicleFuel === 'hybrid') && (
+                  <Field k="vehicleKw" label="Electric motor kW (concessions)" v={form} set={set} />
+                )}
+                <div className="space-y-1"><Label className="text-xs">Use</Label>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.vehicleUse} onChange={e => set('vehicleUse', e.target.value)}>
+                    <option value="private">Private</option><option value="commercial">Commercial</option>
+                  </select></div>
+                <label className="flex items-end gap-2 text-sm pb-2">
+                  <input type="checkbox" className="h-4 w-4 accent-teal-600" checked={form.vehicleReturning} onChange={e => set('vehicleReturning', e.target.checked)} />
+                  Returning national (s.45A)
+                </label>
+              </div>
+              <p className="text-[11px] text-muted-foreground">EV/hybrid concessions require the motor kW — L.N. 247/2024 caps the hybrid motor at 105 kW; EV MVT is charged per kW (Part IA item 8).</p>
             </div>
           )}
 
@@ -201,9 +222,17 @@ export default function CalculatorPage() {
                 </table>
                 <p className="text-xs text-muted-foreground mt-3">
                   CIF {fmtUSD(result.cifUsd)} → {fmtTTD(result.cifTtd)} · FX {result.exchangeRate} ·
-                  Duty {fmtTTD(result.dutyTtd)} · MVT {fmtTTD(result.mvtTtd)} · VAT {fmtTTD(result.vatTtd)} ·
+                  Duty {fmtTTD(result.dutyTtd)} · MVT {fmtTTD(result.mvtTtd)}{result.exciseTtd > 0 ? ` · Excise ${fmtTTD(result.exciseTtd)}` : ''} · VAT {fmtTTD(result.vatTtd)} ·
                   Fees {fmtTTD(result.feesTtd)} · Environmental {fmtTTD(result.environmentalTtd)}
                 </p>
+                {result.vehicleConcession && result.vehicleConcession.instruments.length > 0 && (
+                  <div className="mt-3 rounded-md border border-teal-600/30 bg-teal-600/5 p-3">
+                    <p className="text-xs font-semibold text-teal-700 dark:text-teal-400 mb-1.5">Legal regime applied: {result.vehicleConcession.regime}</p>
+                    <ul className="text-[11px] text-muted-foreground space-y-1">
+                      {result.vehicleConcession.instruments.map((ins, i) => <li key={i}>• {ins}</li>)}
+                    </ul>
+                  </div>
+                )}
                 <p className="text-[11px] text-muted-foreground mt-2">
                   Reference figures from versioned legal schedules (config editable). The broker of record remains
                   responsible for the customs declaration — CaribClear is a tool, not a licensed agent.

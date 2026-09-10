@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://www.searates.com",
+    "name": "Vessel Tracking API | Real-Time Updates on",
+    "snippet": "Get predictive ETA with API for vessel location tracking . Achieve supply chain visibility — integrate the Vessel Tracking API for container shipping businesses.",
+    "host_name": "www.searates.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.vizionapi.com",
+    "name": "Vessel Tracking with AIS Data: Real-Time Visibility",
+    "snippet": "Feb 27, 2025 — AIS data is revolutionizing maritime logistics by enabling real-time vessel tracking, reducing delays, and enhancing shipment visibility. With ... Read more",
+    "host_name": "www.vizionapi.com",
+    "rank": 1,
+    "date": "Feb 27, 2025",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.coneksion.com",
+    "name": "Ocean Shipment Tracking - How to Improve",
+    "snippet": "Mar 16, 2026 — Many websites offer free visualized ocean vessel tracking information based on AIS (Automatic Identification System) data.",
+    "host_name": "www.coneksion.com",
+    "rank": 2,
+    "date": "Mar 16, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://opendata.stackexchange.com",
+    "name": "Free source of AIS data (API)",
+    "snippet": "May 25, 2019 — The automatic identification system (AIS) is an automatic tracking system that uses transponders on ships to locate them. There are also databases that ...",
+    "host_name": "opendata.stackexchange.com",
+    "rank": 3,
+    "date": "May 25, 2019",
+    "favicon": ""
+  },
+  {
+    "url": "https://traqocontainer.com",
+    "name": "Container Tracking API — Real-Time REST API for 170",
+    "snippet": "Real-time container tracking API . Track containers, bills of lading and vessels across 170+ ocean carriers with a simple REST endpoint and clean JSON.",
+    "host_name": "traqocontainer.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vesselapi.com",
+    "name": "Ship Tracking API: Live AIS Positions, ETAs, Webhooks",
+    "snippet": "VesselAPI offers a free tier that gives you access to all ship tracking endpoints. Sign up to get your API key and start querying vessel positions immediately. Read more",
+    "host_name": "vesselapi.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

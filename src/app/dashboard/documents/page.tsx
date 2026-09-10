@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { FolderLock, Upload, UploadCloud, AlertTriangle, Replace, Trash2, FileText, Download, FileSearch, ShieldCheck } from 'lucide-react';
+import { FolderLock, Upload, UploadCloud, AlertTriangle, Replace, Trash2, FileText, Download, FileSearch, ShieldCheck, ScanLine } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { AiExtractDialog } from './ai-extract';
 
 interface Doc {
   id: string; groupKey: string; version: number; type: string; title: string; fileName: string;
@@ -90,10 +91,13 @@ export default function DocumentsPage() {
           <h1 className="text-2xl font-bold">Document vault</h1>
           <p className="text-sm text-muted-foreground">5-year retention (Customs Act Cap 78:01) · versioning · expiry alerts.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button className="bg-teal-600 hover:bg-teal-700"><Upload className="h-4 w-4 mr-1" /> Upload document</Button></DialogTrigger>
-          <DialogContent className="max-w-lg"><UploadForm onDone={() => { setOpen(false); load(); }} /></DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <AiExtractDialog />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild><Button className="bg-teal-600 hover:bg-teal-700"><Upload className="h-4 w-4 mr-1" /> Upload document</Button></DialogTrigger>
+            <DialogContent className="max-w-lg"><UploadForm onDone={() => { setOpen(false); load(); }} /></DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {expiring.length > 0 && (

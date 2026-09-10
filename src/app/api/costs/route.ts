@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireTenant } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
-import { calculateLandedCost, DEFAULT_RATE_CONFIG, type RateConfigSnapshot } from '@/lib/engine/landed-cost';
+import { calculateLandedCost, normalizeRateConfig, DEFAULT_RATE_CONFIG, type RateConfigSnapshot } from '@/lib/engine/landed-cost';
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,16 +30,16 @@ export async function POST(req: NextRequest) {
     if (!hs) return fail(404, 'HS_NOT_FOUND', 'HS code not found in the tariff table. Check /dashboard/hs-codes.');
 
     const tenant = await db.tenant.findUnique({ where: { id: s.tenantId } });
-    // Load the ACTIVE versioned config (falls back to compiled default)
+    // Load the ACTIVE versioned config (normalize legacy v1/v2 shapes; falls back to compiled default)
     const cfgRow = await db.rateConfig.findFirst({ where: { key: 'engine_snapshot', isActive: true }, orderBy: { version: 'desc' } });
     let config: RateConfigSnapshot = DEFAULT_RATE_CONFIG;
-    if (cfgRow) { try { config = JSON.parse(cfgRow.value) as RateConfigSnapshot; } catch { /* fallback */ } }
+    if (cfgRow) { try { config = normalizeRateConfig(JSON.parse(cfgRow.value)); } catch { /* fallback */ } }
     if (!cfgRow) {
       await db.rateConfig.create({
         data: {
-          key: 'engine_snapshot', version: 1, value: JSON.stringify(DEFAULT_RATE_CONFIG),
-          notes: 'Auto-seeded 2026 schedule: CET bands, MVT per-cc, VAT 12.5%, customs fees. Edit via Settings → Rate Configuration.',
-          effectiveFrom: new Date('2026-01-01'),
+          key: 'engine_snapshot', version: DEFAULT_RATE_CONFIG.version, value: JSON.stringify(DEFAULT_RATE_CONFIG),
+          notes: 'v3 Aug-2026: EV TT$400k ceiling (L.N. 479/2025 cl.4B, L.N. 613/2026), hybrid L.N. 247/2024, CNG 8y, returning nationals, excise 18/35, age limits 6y/10y. Edit via Settings → Rate Configuration.',
+          effectiveFrom: new Date('2026-08-04'),
         },
       }).catch(() => null);
     }
@@ -52,7 +52,11 @@ export async function POST(req: NextRequest) {
       hsCode: hs.code,
       cetRate: Number(body.cetRate ?? hs.cetRate),
       vatExempt: hs.vatExempt,
-      vehicle: body.vehicle ? (body.vehicle as { fuel: 'petrol' | 'diesel' | 'ev' | 'hybrid'; engineCc: number; used: boolean; yearOfManufacture?: number }) : undefined,
+      vehicle: body.vehicle ? (body.vehicle as {
+        fuel: 'petrol' | 'diesel' | 'ev' | 'hybrid' | 'cng'; engineCc: number; used: boolean;
+        yearOfManufacture?: number; motorKw?: number;
+        vehicleUse?: 'private' | 'commercial'; returningNational?: boolean;
+      }) : undefined,
       containers: Array.isArray(body.containers) ? (body.containers as Array<'20ft' | '40ft' | '40hc' | 'lcl'>) : [],
       tyreCount: body.tyreCount ? Number(body.tyreCount) : undefined,
       isSingleUsePlastics: !!body.isSingleUsePlastics,

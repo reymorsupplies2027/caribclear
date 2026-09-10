@@ -43,7 +43,7 @@ export const HS_SEED: HsSeedRow[] = [
   { code: '8517', description: 'Phones, smartphones', chapter: '85', cetRate: 0, vatExempt: true },
   { code: '8528', description: 'Televisions, monitors', chapter: '85', cetRate: 20, notes: 'TTBS conformity for electrical goods' },
   { code: '8544', description: 'Insulated wire and cable', chapter: '85', unit: 'kg', cetRate: 10 },
-  { code: '8703', description: 'Motor cars (petrol/diesel/EV) — see cc brackets', chapter: '87', unit: 'pce', cetRate: 25, notes: 'Duty por cilindrada: petrol ≤1599cc 25%, ≤2000cc 35%, ≤3000cc 60%, >3000cc 67.5% · diesel ≤1500cc 35%, ≤2000cc 40%, ≤2500cc 60%, >2500cc 67.5% · MVT por cc (foreign-used 75%)' },
+  { code: '8703', description: 'Motor cars (petrol/diesel/EV/hybrid/CNG) — see cc brackets', chapter: '87', unit: 'pce', cetRate: 25, notes: 'Duty por cilindrada: petrol ≤1599cc 25%, ≤2000cc 35%, ≤3000cc 60%, >3000cc 67.5% · diesel ≤1500cc 35%, ≤2000cc 40%, ≤2500cc 60%, >2500cc 67.5% · MVT por cc (foreign-used 75%) · EV privado ≤TT$400k CIF: 0 duty/MVT/VAT (L.N. 479/2025 cl.4B) · híbrido ≤1599cc+≤105kW: 0 duty (L.N. 247/2024) · usados ≤6 años (Budget FY2026)' },
   { code: '8704', description: 'Goods transport trucks', chapter: '87', unit: 'pce', cetRate: 10, notes: 'Depends on GVW bracket' },
   { code: '8708', description: 'Motor vehicle parts & accessories', chapter: '87', cetRate: 30, notes: 'T&T national deviation for auto parts' },
   { code: '8711', description: 'Motorcycles', chapter: '87', unit: 'pce', cetRate: 30 },
@@ -98,10 +98,10 @@ export const PERMITS_SEED: PermitSeedRow[] = [
   },
 ];
 
-/** Demurrage presets offered in UI (editable per shipment). */
+/** Demurrage presets offered in UI (editable per shipment). Defaults mirror the real PLIPDECO tariff: 8 free days, then TT$500/day for each calendar day beyond (tariff sheet, Jun 2023). Other terminals (NPAR, POS) differ — adjust per shipment. */
 export const DEMURRAGE_PRESETS = {
-  freeDaysDefault: 5,
-  perDayTtdDefault: 350,
+  freeDaysDefault: 8,      // PLIPDECO free time
+  perDayTtdDefault: 500,   // PLIPDECO 8+ calendar days
   alertDaysBefore: 3,
 };
 

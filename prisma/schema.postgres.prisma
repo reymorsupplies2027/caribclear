@@ -150,9 +150,9 @@ model Shipment {
   exchangeRate Float?  // TTD per USD snapshot for this shipment
 
   // Demurrage: grace days at port after arrival, then penalty per day
-  demurrageFreeDays Int @default(5)
+  demurrageFreeDays Int @default(8) // PLIPDECO free time (tariff Jun 2023)
   demurrageStartDate DateTime? // usually arrival/unloaded date
-  demurragePerDayTtd Float @default(350)
+  demurragePerDayTtd Float @default(500) // PLIPDECO 8+ calendar days
 
   assignedToId String?
   createdById  String?

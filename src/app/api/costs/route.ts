@@ -4,6 +4,8 @@ import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireTenant } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
 import { calculateLandedCost, normalizeRateConfig, DEFAULT_RATE_CONFIG, type RateConfigSnapshot } from '@/lib/engine/landed-cost';
+import { computeRegionLandedCost, getRegionRateSet, RegionNotCalibratedError } from '@/lib/engine/region-rates';
+import { planCoversRegion } from '@/lib/plans';
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,6 +32,60 @@ export async function POST(req: NextRequest) {
     if (!hs) return fail(404, 'HS_NOT_FOUND', 'HS code not found in the tariff table. Check /dashboard/hs-codes.');
 
     const tenant = await db.tenant.findUnique({ where: { id: s.tenantId } });
+
+    // ── Regional path: general goods outside Trinidad & Tobago ──
+    // CARICOM CET duty is shared; per-country sales tax + surcharges come
+    // from the verified regional rate sets. Vehicles refuse (honest scope).
+    const regionCode = String(body.regionCode || 'TT').toUpperCase();
+    if (regionCode !== 'TT') {
+      const rateSet = getRegionRateSet(regionCode);
+      if (!rateSet) return fail(404, 'REGION_NOT_READY', `No landed-cost rate set for region ${regionCode} yet. Available: JM, BB, GY, LC, VC, GD, AG.`);
+      if (!planCoversRegion(tenant?.plan || 'free', regionCode)) {
+        return fail(403, 'PLAN_UPGRADE_REQUIRED', `The ${tenant?.plan || 'free'} plan covers Trinidad & Tobago only. Upgrade to Regional to calculate ${rateSet.country} landed cost.`);
+      }
+      try {
+        const regionResult = computeRegionLandedCost({
+          fobUsd: Number(body.fobUsd) || 0,
+          freightUsd: Number(body.freightUsd) || 0,
+          insuranceUsd: Number(body.insuranceUsd) || 0,
+          fxLocalPerUsd: Number(body.fxLocalPerUsd) || 0,
+          hsCode: hs.code,
+          cetRate: Number(body.cetRate ?? hs.cetRate),
+          unitCount: body.unitCount ? Number(body.unitCount) : undefined,
+          rateSet,
+        });
+        if (isPreview) return ok({ result: null, regionResult, calcId: null });
+        const calc = await db.costCalculation.create({
+          data: {
+            tenantId: s.tenantId,
+            shipmentId: (body.shipmentId as string) || null,
+            name: String(body.name || `Cálculo ${rateSet.country} ${hs.code} ${new Date().toISOString().slice(0, 10)}`),
+            hsCode: hs.code, mode: String(body.mode || 'sea'),
+            fobUsd: Number(body.fobUsd) || 0,
+            freightUsd: Number(body.freightUsd) || 0,
+            insuranceUsd: Number(body.insuranceUsd) || 0,
+            exchangeRate: Number(body.fxLocalPerUsd) || 0,
+            regionCode, regionCurrency: rateSet.currency,
+            configJson: JSON.stringify({ rateSet: rateSet.code, source: rateSet.sourceNote }),
+            breakdownJson: JSON.stringify(regionResult),
+            cifTtd: regionResult.cifLocal, totalTtd: regionResult.totalLocal,
+            createdById: s.userId,
+          },
+        });
+        await appendAuditLog({
+          tenantId: s.tenantId, userId: s.userId, action: 'cost.calculated.regional',
+          entityType: 'cost_calculation', entityId: calc.id,
+          metadata: { hsCode: hs.code, region: regionCode, totalLocal: regionResult.totalLocal, currency: rateSet.currency },
+        });
+        return ok({ result: null, regionResult, calcId: calc.id }, 201);
+      } catch (e) {
+        if (e instanceof RegionNotCalibratedError) {
+          return fail(422, e.code, e.message);
+        }
+        throw e;
+      }
+    }
+
     // Load the ACTIVE versioned config (normalize legacy v1/v2 shapes; falls back to compiled default)
     const cfgRow = await db.rateConfig.findFirst({ where: { key: 'engine_snapshot', isActive: true }, orderBy: { version: 'desc' } });
     let config: RateConfigSnapshot = DEFAULT_RATE_CONFIG;
@@ -68,7 +124,7 @@ export async function POST(req: NextRequest) {
       return ok({ result, calcId: null });
     }
 
-    // Persist calculation
+    // Persist calculation (TT full engine)
     const calc = await db.costCalculation.create({
       data: {
         tenantId: s.tenantId,
@@ -79,6 +135,7 @@ export async function POST(req: NextRequest) {
         freightUsd: Number(body.freightUsd) || 0,
         insuranceUsd: Number(body.insuranceUsd) || 0,
         exchangeRate: result.exchangeRate,
+        regionCode: 'TT', regionCurrency: 'TTD',
         vehicleCc: body.vehicle ? (body.vehicle as { engineCc: number }).engineCc : null,
         vehicleUsed: body.vehicle ? !!(body.vehicle as { used: boolean }).used : null,
         vehicleFuel: body.vehicle ? (body.vehicle as { fuel: string }).fuel : null,

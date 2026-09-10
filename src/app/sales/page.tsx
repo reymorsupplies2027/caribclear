@@ -65,6 +65,7 @@ export default function SalesPortal() {
             <span className="font-bold text-xl tracking-tight"><span className="text-teal-600">Carib</span>Clear</span>
           </Link>
           <nav className="flex items-center gap-3">
+            <Link href="/pricing" className="text-sm font-medium hover:text-foreground hidden sm:block">Pricing</Link>
             <Link href="/login" className="text-sm font-medium hover:text-foreground hidden sm:block">Log In</Link>
             <ThemeToggle />
             <Link href="/register"><Button className="bg-primary hover:bg-[#163a5c] dark:hover:bg-[#3ad2ee] text-primary-foreground font-semibold">Start free</Button></Link>

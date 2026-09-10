@@ -11,7 +11,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { assertTenantOwns, ForbiddenError } from '../src/lib/guard';
 import { computeEntryHash } from '../src/lib/audit';
-import { canTransition } from '../src/lib/engine/asycuda';
+import { canTransition, type FilingStatus } from '../src/lib/engine/asycuda';
 
 const db = new PrismaClient();
 let passed = 0; let failed = 0;
@@ -96,7 +96,7 @@ try {
   ok(ownFiling !== null && ownFiling.country === 'TT', 'el dueño ve su filing con todos los campos (schema pusheado real)');
   const tl = JSON.parse(ownFiling!.timelineJson);
   ok(Array.isArray(tl) && tl.length === 1 && tl[0].status === 'xml_generated', 'timeline persiste y roundtrip JSON correcto');
-  ok(canTransition(ownFiling!.status, 'filed') && !canTransition(ownFiling!.status, 'cleared'), 'flujo ASYCUDA validado contra el registro real: filed sí, cleared no');
+  ok(canTransition(ownFiling!.status as FilingStatus, 'filed') && !canTransition(ownFiling!.status as FilingStatus, 'cleared'), 'flujo ASYCUDA validado contra el registro real: filed sí, cleared no');
   const updated = await db.customsFiling.update({
     where: { id: filingA.id },
     data: {

@@ -26,18 +26,38 @@ interface Result {
   totalTtd: number; landedOverCifPct: number; lines: CostLine[]; warnings: string[];
   vehicleConcession?: { regime: string; instruments: string[] };
 }
+interface RegionLine { key: string; label: string; basis: string; amount: number; kind: string; order: number; verified: boolean }
+interface RegionResult {
+  code: string; country: string; currency: string;
+  cifUsd: number; cifLocal: number; dutyLocal: number; taxLocal: number; surchargesLocal: number;
+  totalLocal: number; landedOverCifPct: number; lines: RegionLine[]; warnings: string[]; sourceNote: string;
+}
 interface HsCode { id: string; code: string; description: string; cetRate: number; vatExempt: boolean; notes: string | null }
 interface Calc { id: string; name: string; hsCode: string; totalTtd: number; createdAt: string }
+
+/* Regional rate sets live today (engine refuses vehicles outside TT). */
+const REGION_OPTIONS = [
+  { code: 'TT', country: 'Trinidad & Tobago (full engine)', currency: 'TTD' },
+  { code: 'JM', country: 'Jamaica', currency: 'JMD' },
+  { code: 'BB', country: 'Barbados', currency: 'BBD' },
+  { code: 'GY', country: 'Guyana', currency: 'GYD' },
+  { code: 'LC', country: 'Saint Lucia', currency: 'XCD' },
+  { code: 'VC', country: 'St. Vincent & the Grenadines', currency: 'XCD' },
+  { code: 'GD', country: 'Grenada', currency: 'XCD' },
+  { code: 'AG', country: 'Antigua & Barbuda', currency: 'XCD' },
+];
 
 export default function CalculatorPage() {
   const [codes, setCodes] = useState<HsCode[]>([]);
   const [history, setHistory] = useState<Calc[]>([]);
   const [result, setResult] = useState<Result | null>(null);
+  const [regionResult, setRegionResult] = useState<RegionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [form, setForm] = useState({
     hsCode: '8703', fobUsd: '9500', freightUsd: '1800', insuranceUsd: '190',
-    exchangeRate: '', isVehicle: false, vehicleCc: '1500', vehicleFuel: 'petrol', vehicleUsed: true, vehicleYear: '2021',
+    exchangeRate: '', regionCode: 'TT', fxLocalPerUsd: '', unitCount: '',
+    isVehicle: false, vehicleCc: '1500', vehicleFuel: 'petrol', vehicleUsed: true, vehicleYear: '2021',
     vehicleKw: '', vehicleUse: 'private', vehicleReturning: false,
     containers: '1x40ft', tyreCount: '', isOnlinePurchase: false, isPlastics: false, name: '',
   });
@@ -50,19 +70,27 @@ export default function CalculatorPage() {
 
   const calculate = useCallback(async (persist: boolean) => {
     setBusy(true);
+    setResult(null); setRegionResult(null);
     try {
+      const isRegion = form.regionCode !== 'TT';
       const payload: Record<string, unknown> = {
         hsCode: form.hsCode,
         fobUsd: Number(form.fobUsd) || 0,
         freightUsd: Number(form.freightUsd) || 0,
         insuranceUsd: Number(form.insuranceUsd) || 0,
         exchangeRate: form.exchangeRate ? Number(form.exchangeRate) : undefined,
-        containers: form.containers === 'none' ? [] : form.containers.split(',').map(x => x.trim()).filter(Boolean),
-        isOnlinePurchase: form.isOnlinePurchase,
-        isSingleUsePlastics: form.isPlastics,
-        tyreCount: form.tyreCount ? Number(form.tyreCount) : undefined,
       };
-      if (form.isVehicle) payload.vehicle = {
+      if (isRegion) {
+        payload.regionCode = form.regionCode;
+        payload.fxLocalPerUsd = Number(form.fxLocalPerUsd) || 0;
+        if (form.unitCount) payload.unitCount = Number(form.unitCount);
+      } else {
+        payload.containers = form.containers === 'none' ? [] : form.containers.split(',').map(x => x.trim()).filter(Boolean);
+        payload.isOnlinePurchase = form.isOnlinePurchase;
+        payload.isSingleUsePlastics = form.isPlastics;
+        payload.tyreCount = form.tyreCount ? Number(form.tyreCount) : undefined;
+      }
+      if (!isRegion && form.isVehicle) payload.vehicle = {
         fuel: form.vehicleFuel, engineCc: Number(form.vehicleCc) || 0,
         used: form.vehicleUsed, yearOfManufacture: form.vehicleYear ? Number(form.vehicleYear) : undefined,
         motorKw: form.vehicleKw ? Number(form.vehicleKw) : undefined,
@@ -70,9 +98,13 @@ export default function CalculatorPage() {
         returningNational: form.vehicleReturning,
       };
       if (persist) payload.name = form.name || undefined;
-      const data = await api<{ result: Result }>(persist ? '/api/costs' : '/api/costs?preview=1', { method: 'POST', body: JSON.stringify(payload) });
-      setResult(data.result);
-      if (persist) { toast({ title: 'Calculation saved', description: fmtTTD(data.result.totalTtd) }); }
+      const data = await api<{ result: Result | null; regionResult?: RegionResult | null }>(persist ? '/api/costs' : '/api/costs?preview=1', { method: 'POST', body: JSON.stringify(payload) });
+      if (data.regionResult) setRegionResult(data.regionResult);
+      else if (data.result) setResult(data.result);
+      if (persist) {
+        const shown = data.regionResult ? `${data.regionResult.totalLocal} ${data.regionResult.currency}` : fmtTTD((data.result as Result).totalTtd);
+        toast({ title: 'Calculation saved', description: shown });
+      }
     } catch (err) {
       toast({ title: 'Error', description: err instanceof Error ? err.message : 'Calculation failed', variant: 'destructive' });
     } finally { setBusy(false); }
@@ -96,13 +128,28 @@ export default function CalculatorPage() {
             <Field k="freightUsd" label="Freight USD" v={form} set={set} />
             <Field k="insuranceUsd" label="Insurance USD" v={form} set={set} />
           </div>
-          <Field k="exchangeRate" label="TT$/USD (blank = tenant default 6.80)" v={form} set={set} />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1"><Label htmlFor="region">Customs region</Label>
+              <select id="region" className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.regionCode} onChange={e => set('regionCode', e.target.value)}>
+                {REGION_OPTIONS.map(r => <option key={r.code} value={r.code}>{r.country}</option>)}
+              </select></div>
+            {form.regionCode === 'TT'
+              ? <Field k="exchangeRate" label="TT$/USD (blank = tenant default 6.80)" v={form} set={set} />
+              : <Field k="fxLocalPerUsd" label={`${REGION_OPTIONS.find(r => r.code === form.regionCode)?.currency || ''}/USD`} v={form} set={set} />}
+          </div>
+          {form.regionCode !== 'TT' && (
+            <div className="rounded-lg border border-sky-500/40 bg-sky-500/5 p-3">
+              <p className="text-xs text-sky-700 dark:text-sky-400 font-semibold mb-1">Regional mode — general goods only</p>
+              <p className="text-[11px] text-muted-foreground">Duty uses the shared CARICOM CET; the sales tax and national surcharges come from the verified rate set for {REGION_OPTIONS.find(r => r.code === form.regionCode)?.country}. Vehicles (HS 8703) are refused outside T&T — request a calibration pack. Unverified rates show an asterisk (*).</p>
+              {form.regionCode === 'GY' && <div className="mt-2"><Field k="unitCount" label="Non-returnable container units (env. tax GY$10/unit)" v={form} set={set} /></div>}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="veh" checked={form.isVehicle} onChange={e => set('isVehicle', e.target.checked)} className="h-4 w-4 accent-teal-600" />
-            <Label htmlFor="veh" className="font-normal">Vehicle (HS 8703) — apply cc brackets & Motor Vehicle Tax</Label>
+            <input type="checkbox" id="veh" checked={form.isVehicle} disabled={form.regionCode !== 'TT'} onChange={e => set('isVehicle', e.target.checked)} className="h-4 w-4 accent-teal-600" />
+            <Label htmlFor="veh" className="font-normal">Vehicle (HS 8703) — apply cc brackets & Motor Vehicle Tax {form.regionCode !== 'TT' ? '(T&T only)' : ''}</Label>
           </div>
-          {form.isVehicle && (
+          {form.isVehicle && form.regionCode === 'TT' && (
             <div className="space-y-2 rounded-lg border p-3 bg-teal-600/5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="space-y-1"><Label className="text-xs">Fuel</Label>
@@ -135,15 +182,17 @@ export default function CalculatorPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1"><Label htmlFor="cont">Containers</Label>
-              <select id="cont" className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.containers} onChange={e => set('containers', e.target.value)}>
+              <select id="cont" disabled={form.regionCode !== 'TT'} className="flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm disabled:opacity-50" value={form.containers} onChange={e => set('containers', e.target.value)}>
                 <option value="none">None / LCL</option><option value="20ft">1 × 20ft</option><option value="40ft">1 × 40ft</option><option value="40hc">1 × 40HC</option><option value="20ft,20ft">2 × 20ft</option><option value="40ft,20ft">40ft + 20ft</option>
               </select></div>
-            <Field k="tyreCount" label="Tyres (HS 4011)" v={form} set={set} type="number" />
+            <Field k="tyreCount" label={form.regionCode === 'TT' ? 'Tyres (HS 4011)' : 'Tyres (T&T only)'} v={form} set={set} type="number" />
           </div>
+          {form.regionCode === 'TT' && (
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-teal-600" checked={form.isOnlinePurchase} onChange={e => set('isOnlinePurchase', e.target.checked)} /> Online purchase (7%)</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-teal-600" checked={form.isPlastics} onChange={e => set('isPlastics', e.target.checked)} /> Single-use plastics (5%)</label>
           </div>
+          )}
 
           <div className="flex gap-2 pt-1">
             <Button onClick={() => calculate(false)} disabled={busy} variant="outline" className="flex-1">Preview</Button>
@@ -169,12 +218,14 @@ export default function CalculatorPage() {
 
       {/* RESULT */}
       <div className="lg:col-span-3 space-y-4">
-        {!result ? (
+        {!result && !regionResult ? (
           <Card><CardContent className="py-16 text-center text-muted-foreground">
             <Calculator className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            Enter your shipment values and press <strong>Preview</strong> —<br />the official T&T formulas produce a line-by-line breakdown.
+            Enter your shipment values and press <strong>Preview</strong> —<br />the official formulas produce a line-by-line breakdown.
           </CardContent></Card>
-        ) : (
+        ) : regionResult ? (
+          <RegionResultView r={regionResult} />
+        ) : result ? (
           <>
             {result.warnings.length > 0 && (
               <Card className="border-amber-500/40 bg-amber-500/5">
@@ -240,7 +291,7 @@ export default function CalculatorPage() {
               </CardContent>
             </Card>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -252,5 +303,62 @@ function Field({ k, label, v, set, type = 'number' }: { k: string; label: string
       <Label htmlFor={`f-${k}`} className="text-xs">{label}</Label>
       <Input id={`f-${k}`} type={type} className="h-9" value={String(v[k] ?? '')} onChange={e => set(k, e.target.value)} />
     </div>
+  );
+}
+
+function RegionResultView({ r }: { r: RegionResult }) {
+  const money = (n: number) => `${r.currency} ${n.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return (
+    <>
+      {r.warnings.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-4 space-y-1.5">
+            {r.warnings.map((w, i) => (
+              <p key={i} className="text-sm flex gap-2"><AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" /> {w}</p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-lg">Breakdown — {r.country}</CardTitle>
+            <Badge className="bg-sky-600 text-white border-0">+{r.landedOverCifPct}% over CIF</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground border-b">
+                <th className="py-2 font-medium">Concept</th>
+                <th className="py-2 font-medium hidden sm:table-cell">Basis</th>
+                <th className="py-2 font-medium text-right">{r.currency}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.lines.map(l => (
+                <tr key={l.key} className={`border-b last:border-0 ${l.kind === 'value' ? 'bg-sky-600/5 font-semibold' : ''}`}>
+                  <td className="py-2.5 pr-2">{l.label}</td>
+                  <td className="py-2.5 pr-2 text-xs text-muted-foreground hidden sm:table-cell">{l.basis}</td>
+                  <td className={`py-2.5 text-right tabular-nums ${l.kind === 'value' ? 'font-bold' : ''}`}>{money(l.amount)}</td>
+                </tr>
+              ))}
+              <tr className="text-base font-extrabold">
+                <td className="py-3">TOTAL LANDED COST</td>
+                <td className="hidden sm:table-cell" />
+                <td className="py-3 text-right tabular-nums text-sky-700 dark:text-sky-400">{money(r.totalLocal)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-xs text-muted-foreground mt-3">
+            CIF {fmtUSD(r.cifUsd)} → {money(r.cifLocal)} · Duty {money(r.dutyLocal)} · {money(r.taxLocal)} · Surcharges {money(r.surchargesLocal)}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Rate sources: {r.sourceNote}. * = rate cited by trade references but not confirmed by the administration —
+            calibrate in Settings before quoting. The broker of record remains responsible for the declaration.
+          </p>
+        </CardContent>
+      </Card>
+    </>
   );
 }

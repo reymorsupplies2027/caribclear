@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
       data: {
         ...(body.plan ? { plan: body.plan } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
-        ...(body.plan === 'pro' ? { subscriptionEndsAt: new Date(Date.now() + 365 * 86400000) } : {}),
+        ...(body.plan && ['pro', 'regional', 'enterprise'].includes(body.plan) ? { subscriptionEndsAt: new Date(Date.now() + 365 * 86400000) } : {}),
       },
     });
     await appendAuditLog({

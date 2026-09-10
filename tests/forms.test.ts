@@ -3,7 +3,7 @@
  * Run: bun tests/forms.test.ts
  */
 import {
-  buildFormC82, buildFormC84, buildCaricomCo, validateC82Totals, c82TotalTaxes,
+  buildFormC82, buildFormC84, buildFormC83, buildFormC86, buildCaricomCo, validateC82Totals, c82TotalTaxes,
   CARICOM_MEMBERS, type C82Input,
 } from '../src/lib/engine/forms';
 
@@ -128,6 +128,62 @@ console.log('— CARICOM Certificate of Origin —');
   ok(nonMember.errors.some((e) => e.message.includes('not a CARICOM member')), 'non-member origin REJECTED with guidance');
   ok(CARICOM_MEMBERS.includes('Trinidad and Tobago') && CARICOM_MEMBERS.includes('Haiti'), 'member list includes TT and Haiti (15 members)');
   ok(CARICOM_MEMBERS.length === 16, `list has 16 entries (15 members, Bahamas appears twice as alias) — got ${CARICOM_MEMBERS.length}`);
+}
+
+console.log('— C83 (Notification of Query and Referral) —');
+{
+  const good = buildFormC83({
+    queryNo: 'QRY-2026-1188',
+    entryNoAndDate: 'C82-2026-004512 / 2026-08-12',
+    declarantName: 'Clearing Services Ltd',
+    importerExporter: 'West Power Distribution Ltd',
+    officerUnit: 'Examination Bay 3 — Port of Spain',
+    referralType: 'Valuation',
+    itemsAffected: 'Item 1 — container MSCU-123456-7',
+    queryDetails: 'Customs queries the declared unit value of item 1 against contemporaneous imports of comparable cables. Submit supplier contract and payment proof.',
+    responseDetails: 'Submitted supplier contract, pro-forma and TT$ payment confirmation (Bank Ltd).',
+    responseDeadline: '2026-08-26',
+    shipmentReference: 'CC-2026-0007',
+  });
+  ok(good.errors.length === 0, `valid C83 accepted (${good.errors.length})`);
+  ok(good.form.kind === 'c83', 'kind c83');
+  ok(good.form.legalNote.includes('Legal Notice 72 of 1993'), 'official citation present');
+  ok(good.form.status === 'Open', 'status defaults to Open');
+
+  const bad = buildFormC83({});
+  ok(bad.errors.some((e) => e.field === 'entryNoAndDate'), 'error: C83 must link an existing entry');
+  ok(bad.errors.some((e) => e.field === 'queryDetails'), 'error: query must be stated');
+  ok(bad.warnings.some((w) => w.field === 'responseDeadline'), 'warning: no deadline recorded');
+}
+
+console.log('— C86 (Bill of Sight covered by Bond) —');
+{
+  const good = buildFormC86({
+    entryNoAndDate: 'BOS-2026-000211 / 2026-09-01',
+    importerExporter: 'Atlantic Hardware Ltd, Point Lisas',
+    declarantName: 'Clearing Services Ltd',
+    goodsBestDescription: 'One sealed 40ft container said to contain power tools and hand tools (invoice still in transit).',
+    reasonsParticularsUnavailable: 'Commercial invoice and packing list delayed in transit; container arrived unmanifested in detail.',
+    containers: '1 container(s) — 40ft',
+    estimatedValueTtd: 180000,
+    estimatedQuantity: 'approx. 900 cartons',
+    bondAmountTtd: 250000,
+    bondSurety: 'Guardian General Brokerage Ltd',
+    shipmentReference: 'CC-2026-0031',
+  });
+  ok(good.errors.length === 0, `valid C86 accepted (${good.errors.length})`);
+  ok(good.form.kind === 'c86', 'kind c86');
+  ok(good.form.undertakingText.includes('Form C82'), 'undertaking commits to the full C82 declaration');
+  ok(good.form.bondText.includes('bond in the sum stated above'), 'bond condition text present');
+  ok(good.form.legalNote.includes('Bill of Sight covered by Bond'), 'official form name cited');
+  ok(good.form.bondAmountTtd === 250000, 'bond amount preserved');
+
+  const bad = buildFormC86({ bondAmountTtd: 0 });
+  ok(bad.errors.some((e) => e.field === 'importerExporter'), 'error: importer mandatory');
+  ok(bad.errors.some((e) => e.field === 'goodsBestDescription'), 'error: best-known description mandatory');
+  ok(bad.errors.some((e) => e.field === 'reasonsParticularsUnavailable'), 'error: reasons mandatory');
+  ok(bad.errors.some((e) => e.field === 'bondAmountTtd'), 'error: bond > 0 mandatory');
+  ok(bad.warnings.some((w) => w.field === 'estimatedValueTtd'), 'warning: no estimated value');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

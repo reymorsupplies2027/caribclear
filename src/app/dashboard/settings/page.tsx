@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Settings as SettingsIcon, Download, ShieldCheck, QrCode, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DeviceSettingsCard } from '@/components/pwa/device-settings-card';
+import { RateConfigCard } from './rate-config-card';
 
 interface SettingsData {
   tenant: { id: string; name: string; plan: string; defaultExchangeRate: number; dataRetentionYears: number };
@@ -119,6 +120,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Rate configuration — the "when the law changes" mechanism */}
+      <RateConfigCard />
 
       <DeviceSettingsCard />
     </div>

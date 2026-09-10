@@ -4,13 +4,13 @@ import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireTenant } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
 import {
-  buildFormC82, buildFormC84, buildCaricomCo, validateC82Totals,
-  CARICOM_MEMBERS, type C82Form, type C84Form, type CaricomCoForm,
+  buildFormC82, buildFormC84, buildFormC83, buildFormC86, buildCaricomCo, validateC82Totals,
+  CARICOM_MEMBERS, type C82Form, type C84Form, type C83Form, type C86Form, type CaricomCoForm,
 } from '@/lib/engine/forms';
 import type { LandedCostResult, CostLine } from '@/lib/engine/landed-cost';
 
 /**
- * GET /api/forms/build?kind=c82|c73|c84|caricom-co&shipmentId=...
+ * GET /api/forms/build?kind=c82|c73|c83|c84|c86|caricom-co&shipmentId=...
  * Builds an official-form DRAFT from REAL tenant data (shipment + containers +
  * latest landed-cost calculation + vault documents). Never invents numbers:
  * missing mandatory data comes back as validation errors/warnings for the UI.
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const kind = url.searchParams.get('kind') || 'c82';
     const shipmentId = url.searchParams.get('shipmentId');
     if (!shipmentId) return fail(400, 'MISSING_SHIPMENT', 'shipmentId is required.');
-    if (!['c82', 'c73', 'c84', 'caricom-co'].includes(kind)) return fail(400, 'BAD_KIND', 'Unknown form kind.');
+    if (!['c82', 'c73', 'c83', 'c84', 'c86', 'caricom-co'].includes(kind)) return fail(400, 'BAD_KIND', 'Unknown form kind.');
 
     const shipment = await db.shipment.findFirst({
       where: { id: shipmentId, tenantId: s.tenantId },
@@ -98,6 +98,27 @@ export async function GET(req: NextRequest) {
       });
       errors = built.errors; warnings = [...warnings, ...built.warnings];
       result = { ...built.form, generatedFrom: { shipmentReference: shipment.reference, builtAt: new Date().toISOString() } };
+    } else if (kind === 'c83') {
+      const built = buildFormC83({
+        declarantName: tenant?.name || '',
+        importerExporter: shipment.client?.company || shipment.client?.name || '',
+        itemsAffected: shipment.containers.length ? shipment.containers.map((c) => `${c.number || c.size}`).join(', ') : '',
+        referralType: 'Examination',
+        status: 'Open',
+        shipmentReference: shipment.reference,
+      });
+      errors = built.errors; warnings = [...warnings, ...built.warnings];
+      result = { ...built.form, generatedFrom: { shipmentReference: shipment.reference, builtAt: new Date().toISOString() } };
+    } else if (kind === 'c86') {
+      const built = buildFormC86({
+        declarantName: tenant?.name || '',
+        importerExporter: shipment.client?.company || shipment.client?.name || '',
+        goodsBestDescription: shipment.goodsDescription || '',
+        containers: shipment.containers.length ? `${shipment.containers.length} container(s) — ${shipment.containers.map((c) => c.size).join(', ')}` : '',
+        shipmentReference: shipment.reference,
+      });
+      errors = built.errors; warnings = [...warnings, ...built.warnings];
+      result = { ...built.form, generatedFrom: { shipmentReference: shipment.reference, builtAt: new Date().toISOString() } };
     } else {
       // caricom-co — origin detection from the origin port string (e.g. "Kingston, Jamaica")
       const originPort = shipment.originPort || '';
@@ -129,9 +150,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const s = await requireTenant(req);
-    const body = await readJson<{ kind?: string; shipmentId?: string; payload?: C82Form | C84Form | CaricomCoForm; title?: string }>(req);
+    const body = await readJson<{ kind?: string; shipmentId?: string; payload?: C82Form | C83Form | C84Form | C86Form | CaricomCoForm; title?: string }>(req);
     if (!body.kind || !body.payload) return fail(400, 'MISSING_FIELDS', 'kind and payload are required.');
-    if (!['c82', 'c73', 'c84', 'caricom-co'].includes(body.kind)) return fail(400, 'BAD_KIND', 'Unknown form kind.');
+    if (!['c82', 'c73', 'c83', 'c84', 'c86', 'caricom-co'].includes(body.kind)) return fail(400, 'BAD_KIND', 'Unknown form kind.');
 
     const payload = body.payload;
     if (body.kind === 'c82' || body.kind === 'c73') {
@@ -143,6 +164,16 @@ export async function POST(req: NextRequest) {
       const p = payload as C84Form;
       if (!p.declarationNoAndDate) return fail(422, 'INVALID_FORM', 'C84 must link an existing customs declaration.');
       if (!p.claims.length) return fail(422, 'INVALID_FORM', 'C84 needs at least one claim.');
+    } else if (body.kind === 'c83') {
+      const p = payload as C83Form;
+      if (!p.entryNoAndDate) return fail(422, 'INVALID_FORM', 'C83 must link the queried customs entry.');
+      if (!p.queryDetails) return fail(422, 'INVALID_FORM', 'C83 must state the query raised by Customs.');
+    } else if (body.kind === 'c86') {
+      const p = payload as C86Form;
+      if (!p.importerExporter) return fail(422, 'INVALID_FORM', 'C86 needs the importer/exporter.');
+      if (!p.goodsBestDescription) return fail(422, 'INVALID_FORM', 'C86 needs a best-known description of the goods.');
+      if (!p.reasonsParticularsUnavailable) return fail(422, 'INVALID_FORM', 'C86 must state why complete particulars are unavailable.');
+      if (!p.bondAmountTtd || p.bondAmountTtd <= 0) return fail(422, 'INVALID_FORM', 'C86 must be covered by a bond greater than zero.');
     } else {
       const p = payload as CaricomCoForm;
       const isMember = CARICOM_MEMBERS.some((m) => m.toLowerCase() === (p.box4CountryOfOrigin || '').toLowerCase());

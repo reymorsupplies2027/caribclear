@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X, FileText, BarChart3,
+  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X, FileText, BarChart3, Scale, Wrench,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -31,6 +31,8 @@ const NAV = [
   { href: '/dashboard/hs-codes', label: 'HS / CET', icon: Search },
   { href: '/dashboard/permits', label: 'Permits', icon: ClipboardCheck },
   { href: '/dashboard/forms', label: 'Forms studio', icon: FileText },
+  { href: '/dashboard/tools', label: 'Tools', icon: Wrench },
+  { href: '/dashboard/legal-library', label: 'Legal library', icon: Scale },
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
   { href: '/dashboard/clients', label: 'Clients', icon: Users },
   { href: '/dashboard/quotes', label: 'Quotes', icon: ReceiptText },

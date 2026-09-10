@@ -7,23 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { isOfflineFailure, enqueueOp } from '@/lib/offline/outbox';
-import type { C82Form, C84Form, CaricomCoForm, FormIssue } from '@/lib/engine/forms';
+import type { C82Form, C84Form, C83Form, C86Form, CaricomCoForm, FormIssue } from '@/lib/engine/forms';
 import { Printer, Save, FileText, AlertTriangle, ShieldCheck, Loader2, ScrollText, Globe2, Landmark } from 'lucide-react';
 
 /**
  * Forms Studio — builds official T&T / CARICOM customs forms from REAL
  * shipment data: Form C82 (T&T goods declaration, Legal Notice 72/1993),
- * Form C73 (regional declaration — Jamaica/Guyana/Barbados), Form C84
- * (claims under specific customs procedures) and the CARICOM Certificate
- * of Origin. Drafts are review-and-lodge aids for the broker: nothing is
- * auto-submitted to Customs.
+ * Form C73 (regional declaration — Jamaica/Guyana/Barbados), Form C83
+ * (Notification of Query and Referral), Form C84 (claims under specific
+ * customs procedures), Form C86 (Bill of Sight covered by Bond) and the
+ * CARICOM Certificate of Origin. Drafts are review-and-lodge aids for the
+ * broker: nothing is auto-submitted to Customs.
  */
 
-type FormPayload = C82Form | C84Form | CaricomCoForm;
+type FormPayload = C82Form | C83Form | C84Form | C86Form | CaricomCoForm;
 const KINDS = [
   { id: 'c82', label: 'C82 — T&T declaration', hint: 'Customs Declaration (Import/Export), Chap. 78:01' },
   { id: 'c73', label: 'C73 — Regional', hint: 'Jamaica · Guyana · Barbados entry form' },
+  { id: 'c83', label: 'C83 — Query & referral', hint: 'Notification of Query and Referral — answer a customs query' },
   { id: 'c84', label: 'C84 — Special claims', hint: 'Concessions, exemptions, undertakings' },
+  { id: 'c86', label: 'C86 — Bill of Sight', hint: 'Bill of Sight covered by Bond — particulars incomplete' },
   { id: 'caricom-co', label: 'CARICOM CO', hint: 'Certificate of Origin — CARICOM member states' },
 ] as const;
 type Kind = (typeof KINDS)[number]['id'];
@@ -66,7 +69,9 @@ export default function FormsPage() {
   useEffect(() => { build(shipmentId, kind); }, [shipmentId, kind, build]);
 
   function patchC82(fn: (f: C82Form) => C82Form) { setForm((p) => (p && p.kind === 'c82' ? fn(p) : p)); }
+  function patchC83(fn: (f: C83Form) => C83Form) { setForm((p) => (p && p.kind === 'c83' ? fn(p) : p)); }
   function patchC84(fn: (f: C84Form) => C84Form) { setForm((p) => (p && p.kind === 'c84' ? fn(p) : p)); }
+  function patchC86(fn: (f: C86Form) => C86Form) { setForm((p) => (p && p.kind === 'c86' ? fn(p) : p)); }
   function patchCo(fn: (f: CaricomCoForm) => CaricomCoForm) { setForm((p) => (p && p.kind === 'caricom-co' ? fn(p) : p)); }
 
   async function saveToVault() {
@@ -205,6 +210,29 @@ export default function FormsPage() {
                 </div>
               </div>
             )}
+            {form && form.kind === 'c83' && !loading && (
+              <div className="rounded-xl border bg-card p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">3 · Edit before lodgement</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Query number" value={form.queryNo} onChange={(v) => patchC83((f) => ({ ...f, queryNo: v }))} />
+                  <Field label="Query date" value={form.queryDate} onChange={(v) => patchC83((f) => ({ ...f, queryDate: v }))} />
+                  <Field label="Queried entry no. & date (C82/C73)" value={form.entryNoAndDate} onChange={(v) => patchC83((f) => ({ ...f, entryNoAndDate: v }))} />
+                  <Field label="Declarant" value={form.declarantName} onChange={(v) => patchC83((f) => ({ ...f, declarantName: v }))} />
+                  <Field label="Importer / Exporter" value={form.importerExporter} onChange={(v) => patchC83((f) => ({ ...f, importerExporter: v }))} />
+                  <Field label="Officer / unit raising the query" value={form.officerUnit} onChange={(v) => patchC83((f) => ({ ...f, officerUnit: v }))} />
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-medium text-muted-foreground">Referral type</span>
+                    <select className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm" value={form.referralType} onChange={(e) => patchC83((f) => ({ ...f, referralType: e.target.value }))}>
+                      <option>Examination</option><option>Document check</option><option>Valuation</option><option>Origin</option><option>Classification</option><option>Other</option>
+                    </select>
+                  </div>
+                  <Field label="Response deadline" value={form.responseDeadline} onChange={(v) => patchC83((f) => ({ ...f, responseDeadline: v }))} />
+                  <Field label="Items / containers affected" value={form.itemsAffected} onChange={(v) => patchC83((f) => ({ ...f, itemsAffected: v }))} />
+                  <div className="sm:col-span-2"><Field label="Query details (what Customs is asking)" value={form.queryDetails} onChange={(v) => patchC83((f) => ({ ...f, queryDetails: v }))} /></div>
+                  <div className="sm:col-span-2"><Field label="Response provided (documents / clarifications)" value={form.responseDetails} onChange={(v) => patchC83((f) => ({ ...f, responseDetails: v }))} /></div>
+                </div>
+              </div>
+            )}
             {form && form.kind === 'c84' && !loading && (
               <div className="rounded-xl border bg-card p-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">3 · Edit before lodgement</div>
@@ -231,6 +259,23 @@ export default function FormsPage() {
                 </div>
               </div>
             )}
+            {form && form.kind === 'c86' && !loading && (
+              <div className="rounded-xl border bg-card p-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">3 · Edit before lodgement</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Bill-of-sight entry no. & date" value={form.entryNoAndDate} onChange={(v) => patchC86((f) => ({ ...f, entryNoAndDate: v }))} />
+                  <Field label="Importer / Exporter" value={form.importerExporter} onChange={(v) => patchC86((f) => ({ ...f, importerExporter: v }))} />
+                  <Field label="Declarant" value={form.declarantName} onChange={(v) => patchC86((f) => ({ ...f, declarantName: v }))} />
+                  <Field label="Containers" value={form.containers} onChange={(v) => patchC86((f) => ({ ...f, containers: v }))} />
+                  <Field label="Estimated quantity (declared as estimate)" value={form.estimatedQuantity} onChange={(v) => patchC86((f) => ({ ...f, estimatedQuantity: v }))} />
+                  <Field label="Estimated value TT$ (declared as estimate)" type="number" value={form.estimatedValueTtd == null ? '' : String(form.estimatedValueTtd)} onChange={(v) => patchC86((f) => ({ ...f, estimatedValueTtd: v === '' ? null : Number(v) }))} />
+                  <Field label="Bond amount TT$" type="number" value={String(form.bondAmountTtd || '')} onChange={(v) => patchC86((f) => ({ ...f, bondAmountTtd: Number(v) || 0 }))} />
+                  <Field label="Surety (guarantor)" value={form.bondSurety} onChange={(v) => patchC86((f) => ({ ...f, bondSurety: v }))} />
+                  <div className="sm:col-span-2"><Field label="Goods — best-known description" value={form.goodsBestDescription} onChange={(v) => patchC86((f) => ({ ...f, goodsBestDescription: v }))} /></div>
+                  <div className="sm:col-span-2"><Field label="Why complete particulars are unavailable" value={form.reasonsParticularsUnavailable} onChange={(v) => patchC86((f) => ({ ...f, reasonsParticularsUnavailable: v }))} /></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -240,7 +285,9 @@ export default function FormsPage() {
         <div className="print-area mt-6">
           <div className="print-sheet rounded-xl" data-kind={form.kind}>
             {form.kind === 'c82' && <C82Sheet form={form} />}
+            {form.kind === 'c83' && <C83Sheet form={form} />}
             {form.kind === 'c84' && <C84Sheet form={form} />}
+            {form.kind === 'c86' && <C86Sheet form={form} />}
             {form.kind === 'caricom-co' && <CoSheet form={form} />}
           </div>
         </div>
@@ -440,6 +487,88 @@ function C84Sheet({ form }: { form: C84Form }) {
           <p className="mt-4 text-[10px] text-slate-600">...........................................<br />Date: ...........................</p></div>
         <div className="doc-cell"><span className="doc-label">For official use — Comptroller of Customs and Excise</span>
           <p className="mt-4 text-[10px] text-slate-600">Approved / Referred: ...........................................<br />Date: ...........................</p></div>
+      </div>
+      <p className="mt-3 text-[9px] text-slate-600 border-t pt-2">{form.legalNote}</p>
+      <p className="mt-1 text-[8.5px] text-slate-500">Generated by CaribClear · {fmtDateTime(form.generatedFrom.builtAt)} · draft for broker review.</p>
+    </>
+  );
+}
+
+function C83Sheet({ form }: { form: C83Form }) {
+  return (
+    <>
+      <Head title="NOTIFICATION OF QUERY AND REFERRAL — Form C83 (Schedule I)"
+        footer="List of forms, Customs Regulations, Chap. 78:01, as amended by Legal Notice 72 of 1993."
+        right={form.queryNo || form.entryNoAndDate} />
+      <div className="grid grid-cols-2 gap-0 doc-border">
+        <Cell label="Query no." value={form.queryNo} />
+        <Cell label="Query date" value={form.queryDate} />
+        <Cell label="Queried entry no. and date (C82/C73)" value={form.entryNoAndDate} />
+        <Cell label="Referral type" value={form.referralType} />
+        <Cell label="Declarant" value={form.declarantName} />
+        <Cell label="Importer / Exporter" value={form.importerExporter} />
+        <Cell label="Officer / unit" value={form.officerUnit} />
+        <Cell label="Status" value={form.status} />
+        <Cell label="Items / containers affected" value={form.itemsAffected} className="col-span-2" />
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Query details — as raised by Customs</span>
+        <p className="mt-1 whitespace-pre-wrap">{form.queryDetails || '—'}</p>
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Response provided by declarant (documents / clarifications)</span>
+        <p className="mt-1 whitespace-pre-wrap">{form.responseDetails || '—'}</p>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-0 doc-border">
+        <Cell label="Response deadline" value={form.responseDeadline} />
+        <Cell label="Signature of declarant / representative" value="..........................................." />
+        <Cell label="For official use — officer" value="..........................................." />
+      </div>
+      <p className="mt-3 text-[9px] text-slate-600 border-t pt-2">{form.legalNote}</p>
+      <p className="mt-1 text-[8.5px] text-slate-500">Generated by CaribClear · {fmtDateTime(form.generatedFrom.builtAt)} · draft for broker review.</p>
+    </>
+  );
+}
+
+function C86Sheet({ form }: { form: C86Form }) {
+  return (
+    <>
+      <Head title="BILL OF SIGHT COVERED BY BOND — Form C86 (Schedule I)"
+        footer="List of forms, Customs Regulations, Chap. 78:01, as amended by Legal Notice 72 of 1993."
+        right={form.entryNoAndDate} />
+      <div className="grid grid-cols-2 gap-0 doc-border">
+        <Cell label="Bill-of-sight entry no. and date" value={form.entryNoAndDate} />
+        <Cell label="Declarant" value={form.declarantName} />
+        <Cell label="Importer / Exporter" value={form.importerExporter} />
+        <Cell label="Containers" value={form.containers} />
+        <Cell label="Estimated quantity (estimate)" value={form.estimatedQuantity} />
+        <Cell label="Estimated value TT$ (estimate)" value={form.estimatedValueTtd == null ? '—' : `TT$ ${form.estimatedValueTtd.toLocaleString('en-US')}`} />
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Goods — best-known description (declared to the best of the declarant's knowledge)</span>
+        <p className="mt-1 whitespace-pre-wrap">{form.goodsBestDescription || '—'}</p>
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Reason complete particulars are unavailable at this time</span>
+        <p className="mt-1 whitespace-pre-wrap">{form.reasonsParticularsUnavailable || '—'}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-0 doc-border mt-3">
+        <Cell label="Bond amount" value={`TT$ ${form.bondAmountTtd.toLocaleString('en-US')}`} />
+        <Cell label="Surety (guarantor)" value={form.bondSurety} />
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Undertaking</span>
+        <p className="mt-1">{form.undertakingText}</p>
+      </div>
+      <div className="doc-cell mt-3">
+        <span className="doc-label">Bond condition</span>
+        <p className="mt-1">{form.bondText}</p>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="doc-cell"><span className="doc-label">Signature of declarant / representative</span>
+          <p className="mt-4 text-[10px] text-slate-600">...........................................<br />Date: ...........................</p></div>
+        <div className="doc-cell"><span className="doc-label">For official use — Comptroller of Customs and Excise</span>
+          <p className="mt-4 text-[10px] text-slate-600">Bond accepted / Referred: ...........................................<br />Date: ...........................</p></div>
       </div>
       <p className="mt-3 text-[9px] text-slate-600 border-t pt-2">{form.legalNote}</p>
       <p className="mt-1 text-[8.5px] text-slate-500">Generated by CaribClear · {fmtDateTime(form.generatedFrom.builtAt)} · draft for broker review.</p>

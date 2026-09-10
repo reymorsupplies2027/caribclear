@@ -120,7 +120,44 @@ export interface CaricomCoForm {
   generatedFrom: { shipmentReference: string; builtAt: string };
 }
 
-export type BuildableForm = C82Form | C84Form | CaricomCoForm;
+export interface C83Form {
+  kind: 'c83';
+  queryNo: string;               // query reference (customs-assigned or broker tracking no.)
+  queryDate: string;
+  entryNoAndDate: string;        // MANDATORY — the C82/C73 entry the query refers to
+  declarantName: string;
+  importerExporter: string;
+  officerUnit: string;           // examining officer / section issuing the query
+  referralType: string;          // Examination | Document check | Valuation | Origin | Classification | Other
+  itemsAffected: string;         // item numbers, containers, marks affected
+  queryDetails: string;          // MANDATORY — what Customs is querying
+  responseDetails: string;       // the broker's answer / documents provided
+  responseDeadline: string;
+  status: string;                // Open | Answered | Resolved
+  declarationText: string;
+  legalNote: string;
+  generatedFrom: { shipmentReference: string; builtAt: string };
+}
+
+export interface C86Form {
+  kind: 'c86';
+  entryNoAndDate: string;        // bill-of-sight entry number & date
+  importerExporter: string;      // MANDATORY
+  declarantName: string;
+  goodsBestDescription: string;  // MANDATORY — to the best of the declarant's knowledge
+  reasonsParticularsUnavailable: string; // MANDATORY — why the entry cannot be completed yet
+  containers: string;
+  estimatedValueTtd: number | null; // best estimate, clearly labelled as estimate
+  estimatedQuantity: string;
+  bondAmountTtd: number;         // MANDATORY — bond sum covering potential duty + charges
+  bondSurety: string;            // surety / guarantor
+  undertakingText: string;
+  bondText: string;
+  legalNote: string;
+  generatedFrom: { shipmentReference: string; builtAt: string };
+}
+
+export type BuildableForm = C82Form | C84Form | C83Form | C86Form | CaricomCoForm;
 
 /** The 15 CARICOM member states (Community, established 4 July 1973). */
 export const CARICOM_MEMBERS = [
@@ -435,4 +472,125 @@ export function validateC82Totals(form: C82Form): FormIssue[] {
   const diff = Math.abs(c82TotalTaxes(form) - form.box24TotalTaxesTtd);
   if (diff > 0.01) issues.push({ field: 'box24', message: `Box 24 (${form.box24TotalTaxesTtd.toFixed(2)}) does not match the sum of item duties/taxes (${c82TotalTaxes(form).toFixed(2)}).` });
   return issues;
+}
+
+// ── Form C83 — Notification of Query and Referral ────────────────────────────
+// Schedule I, Customs Regulations, Chap. 78:01 (list of forms, as amended by
+// Legal Notice 72 of 1993). Documents a customs query against an existing
+// entry and the broker's response trail.
+
+export interface C83Input {
+  queryNo?: string;
+  queryDate?: string;
+  entryNoAndDate?: string;
+  declarantName?: string;
+  importerExporter?: string;
+  officerUnit?: string;
+  referralType?: string;
+  itemsAffected?: string;
+  queryDetails?: string;
+  responseDetails?: string;
+  responseDeadline?: string;
+  status?: string;
+  shipmentReference?: string;
+}
+
+export function buildFormC83(input: C83Input): BuildResult<C83Form> {
+  const errors: FormIssue[] = [];
+  const warnings: FormIssue[] = [];
+  if (!input.entryNoAndDate) errors.push({ field: 'entryNoAndDate', message: 'The queried customs entry number and date are mandatory — a C83 always refers to an existing C82/C73 declaration.' });
+  if (!input.queryDetails) errors.push({ field: 'queryDetails', message: 'State the query: what Customs is asking or referring for examination must be recorded verbatim.' });
+  if (!input.itemsAffected) warnings.push({ field: 'itemsAffected', message: 'Items/containers affected are empty — identify the exact item lines or containers under query.' });
+  if (!input.declarantName) warnings.push({ field: 'declarantName', message: 'Declarant name is empty.' });
+  if (!input.responseDeadline) warnings.push({ field: 'responseDeadline', message: 'No response deadline recorded — queries left unanswered can stall the release of the goods.' });
+
+  return {
+    errors,
+    warnings,
+    form: {
+      kind: 'c83',
+      queryNo: input.queryNo || '',
+      queryDate: input.queryDate || new Date().toISOString().slice(0, 10),
+      entryNoAndDate: input.entryNoAndDate || '',
+      declarantName: input.declarantName || '',
+      importerExporter: input.importerExporter || '',
+      officerUnit: input.officerUnit || '',
+      referralType: input.referralType || 'Examination',
+      itemsAffected: input.itemsAffected || '',
+      queryDetails: input.queryDetails || '',
+      responseDetails: input.responseDetails || '',
+      responseDeadline: input.responseDeadline || '',
+      status: input.status || 'Open',
+      declarationText:
+        'This notification records the query raised on the entry cited above. The declarant responds in writing, ' +
+        'providing the documents or clarifications requested, without prejudice to the provisions of the Customs Act, Chap. 78:01.',
+      legalNote:
+        'Form C83 — Notification of Query and Referral (Schedule I, list of forms, Customs Regulations, Chap. 78:01, ' +
+        'as amended by Legal Notice 72 of 1993). Keep the query and its answer on file: the response trail is part ' +
+        'of the entry record and may be requested in post-clearance audits.',
+      generatedFrom: { shipmentReference: input.shipmentReference || '', builtAt: new Date().toISOString() },
+    },
+  };
+}
+
+// ── Form C86 — Bill of Sight covered by Bond ────────────────────────────────
+// Schedule I, Customs Regulations, Chap. 78:01 (list of forms, as amended by
+// Legal Notice 72 of 1993). Allows entry when complete particulars of the
+// goods are not yet available; the declaration is completed by the full entry
+// (C82) after examination, under a bond securing duties and charges.
+
+export interface C86Input {
+  entryNoAndDate?: string;
+  importerExporter?: string;
+  declarantName?: string;
+  goodsBestDescription?: string;
+  reasonsParticularsUnavailable?: string;
+  containers?: string;
+  estimatedValueTtd?: number | null;
+  estimatedQuantity?: string;
+  bondAmountTtd?: number;
+  bondSurety?: string;
+  shipmentReference?: string;
+}
+
+export function buildFormC86(input: C86Input): BuildResult<C86Form> {
+  const errors: FormIssue[] = [];
+  const warnings: FormIssue[] = [];
+  if (!input.importerExporter) errors.push({ field: 'importerExporter', message: 'Importer/Exporter is mandatory.' });
+  if (!input.goodsBestDescription) errors.push({ field: 'goodsBestDescription', message: 'A best-known description of the goods is mandatory — a bill of sight still declares, to the best of knowledge, what the goods are.' });
+  if (!input.reasonsParticularsUnavailable) errors.push({ field: 'reasonsParticularsUnavailable', message: 'State why complete particulars are unavailable (e.g. sealed consignment, documents in transit, goods unexamined).' });
+  if (!input.bondAmountTtd || input.bondAmountTtd <= 0) errors.push({ field: 'bondAmountTtd', message: 'The bond amount (TT$) is mandatory — the bill of sight must be covered by a bond securing duties and charges.' });
+  if (!input.bondSurety) warnings.push({ field: 'bondSurety', message: 'Surety (guarantor) is empty — identify the company or person standing behind the bond.' });
+  if (input.estimatedValueTtd == null) warnings.push({ field: 'estimatedValueTtd', message: 'No estimated value — an estimate helps Customs size the bond and screen the consignment.' });
+
+  return {
+    errors,
+    warnings,
+    form: {
+      kind: 'c86',
+      entryNoAndDate: input.entryNoAndDate || '',
+      importerExporter: input.importerExporter || '',
+      declarantName: input.declarantName || '',
+      goodsBestDescription: input.goodsBestDescription || '',
+      reasonsParticularsUnavailable: input.reasonsParticularsUnavailable || '',
+      containers: input.containers || '',
+      estimatedValueTtd: input.estimatedValueTtd ?? null,
+      estimatedQuantity: input.estimatedQuantity || '',
+      bondAmountTtd: round2(input.bondAmountTtd || 0),
+      bondSurety: input.bondSurety || '',
+      undertakingText:
+        'I/We undertake to submit a full and complete declaration of the goods (Form C82) as soon as the particulars ' +
+        'become available and in any case upon completion of examination, and to pay any additional duties, taxes and ' +
+        'other charges lawfully payable in respect of the goods.',
+      bondText:
+        'This bill of sight is covered by a bond in the sum stated above, with the surety named below, conditioned upon ' +
+        'the full and true declaration of the goods and the payment of all duties, taxes and charges payable in respect of them.',
+      legalNote:
+        'Form C86 — Bill of Sight covered by Bond (Schedule I, list of forms, Customs Regulations, Chap. 78:01, ' +
+        'as amended by Legal Notice 72 of 1993). Used when complete particulars of the goods are not available at the ' +
+        'time of entry; the entry is completed by the full declaration after examination. The estimated value and ' +
+        'quantity on this form are declared as estimates, not as final taxable values.',
+      generatedFrom: { shipmentReference: input.shipmentReference || '', builtAt: new Date().toISOString() },
+    },
+  };
 }

@@ -73,3 +73,4 @@ worklog.md
 
 # capturas de verificación visual (artefactos locales)
 verify/
+.pgdata/

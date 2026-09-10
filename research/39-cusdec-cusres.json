@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://fsm.asycuda.org",
+    "name": "Declaration Reference User Guide - FSM ASYCUDA Portal",
+    "snippet": "Mar 23, 2024 — The manual is intended to guide the system users in preparing and submitting the electronic cargo declaration . 26 pages",
+    "host_name": "fsm.asycuda.org",
+    "rank": 0,
+    "date": "Mar 23, 2024",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com",
+    "name": "ASYCUDA XML SAD Message Overview | PDF",
+    "snippet": "The present document will explain how declarants can submit electronically data from a single administrative document (SAD) in XML format.",
+    "host_name": "www.scribd.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://asycuda.customs.gov.lc",
+    "name": "Single Administrative Document (SAD) XML Message",
+    "snippet": "Dec 31, 2007 — The present document will explain how declarants can submit electronically data from a single administrative document (SAD) in XML format. Read more 13 pages",
+    "host_name": "asycuda.customs.gov.lc",
+    "rank": 2,
+    "date": "Dec 31, 2007",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.customs.gov.lk",
+    "name": "ASYCUDA",
+    "snippet": "Dec 31, 2007 — The tables in this section provide information about each Tag required for the AWMDS XML message , including the format, their use (optional or ... Read more 13 pages",
+    "host_name": "www.customs.gov.lk",
+    "rank": 3,
+    "date": "Dec 31, 2007",
+    "favicon": ""
+  },
+  {
+    "url": "https://brokergenius.ai",
+    "name": "How to import XML into asycuda",
+    "snippet": "Learn the step-by-step process of importing XML files into ASYCUDA , including file preparation, upload, verification, and final submission for efficient ...",
+    "host_name": "brokergenius.ai",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://orwiki.org",
+    "name": "EDIFACT Customs Declaration (CUSDEC) - OpenReference",
+    "snippet": "\"This Customs Declaration Message (CUSDEC) permits the transfer of data from a declarant to a customs administration for the purpose of meeting legislative and/ ... Read more",
+    "host_name": "orwiki.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

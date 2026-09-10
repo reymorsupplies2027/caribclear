@@ -166,6 +166,7 @@ model Shipment {
   quotes       Quote[]
   costCalcs    CostCalculation[]
   notifications Notification[]
+  filings      CustomsFiling[]
 
   @@unique([tenantId, reference])
 }
@@ -417,4 +418,40 @@ model Lead {
   createdAt   DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+// ─── CUSTOMS FILING (ASYCUDA World e-filing) ─────────────────────────────────
+// One row per declaration prepared for electronic lodgement on a customs
+// administration's ASYCUDA World portal. The XML is stored encrypted in the
+// vault store; registration/assessment data is recorded from the customs
+// response (CUSRES) — never guessed by the app.
+model CustomsFiling {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  shipmentId         String?
+  shipment           Shipment? @relation(fields: [shipmentId], references: [id])
+  country            String    // region code: TT | JM | GY | BB | LC | VC ...
+  declarationType    String    @default("IM4") // box 1: IM4 | IM7 | EX1
+  office             String    // box A — customs clearance office
+  cpc                String    @default("1000") // box 37 (format per region)
+  currencyCode       String    // box 22 — invoice currency
+  exchangeRate       Float     // box 23 — national ccy per USD
+  status             String    @default("draft") // draft | validated | xml_generated | filed | registered | assessed | cleared | rejected | queried
+  declarationJson    String    // full declaration snapshot (engine output)
+  validationJson     String?   // last validation result {errors, warnings}
+  xmlStorageKey      String?   // encrypted XML path in the vault store
+  xmlChecksum        String?   // SHA-256 of the generated XML
+  registrationNumber String?   // CUSRES — e.g. "C 427"
+  registrationDate   DateTime?
+  assessmentNumber   String?   // CUSRES — accounting box B
+  assessedTotal      Float?    // national ccy
+  receiptNumber      String?   // CUSRES — payment receipt
+  paidAt             DateTime?
+  timelineJson       String    @default("[]") // [{status, at, byName, note}]
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, shipmentId])
 }

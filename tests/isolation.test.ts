@@ -11,6 +11,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { assertTenantOwns, ForbiddenError } from '../src/lib/guard';
 import { computeEntryHash } from '../src/lib/audit';
+import { canTransition } from '../src/lib/engine/asycuda';
 
 const db = new PrismaClient();
 let passed = 0; let failed = 0;
@@ -66,6 +67,47 @@ try {
   const hSame = computeEntryHash({ tenantId: A.id, action: 't', entityType: 'e', entityId: '1', userId: userA.id, metadata: { b: 1, a: 2 }, prevHash: null, timestamp: '2026-01-01T00:00:00.000Z' });
   const hDiff = computeEntryHash({ tenantId: A.id, action: 't', entityType: 'e', entityId: '1', userId: userA.id, metadata: { a: 2, b: 1 }, prevHash: null, timestamp: '2026-01-01T00:00:00.000Z' });
   ok(hSame === hDiff, 'canonical hashing: orden de claves no altera el sello (jsonb-proof)');
+
+  console.log('── 5. e-Filing ASYCUDA: CustomsFiling aislado por tenant ──');
+  const filingA = await db.customsFiling.create({
+    data: {
+      tenantId: A.id,
+      shipmentId: sA.id,
+      country: 'TT',
+      declarationType: 'IM4',
+      office: 'Port of Spain',
+      cpc: '10 00 000',
+      currencyCode: 'USD',
+      exchangeRate: 6.80,
+      status: 'xml_generated',
+      declarationJson: JSON.stringify({ country: 'TT', items: [] }),
+      xmlChecksum: 'a'.repeat(64),
+      timelineJson: JSON.stringify([{ status: 'xml_generated', at: new Date().toISOString(), byName: 'Admin A', note: 'SAD XML generated' }]),
+    },
+  });
+  const seenByBfilings = await db.customsFiling.findMany({ where: { tenantId: B.id } });
+  ok(seenByBfilings.length === 0, 'el filing del tenant A es invisible para el tenant B (scoping en DB real)');
+  const crossDirect = await db.customsFiling.findFirst({ where: { id: filingA.id, tenantId: B.id } });
+  ok(crossDirect === null, 'lookup directo por id cruzando tenants no devuelve nada');
+  let crossBlocked = false;
+  try { assertTenantOwns(B.id, filingA.tenantId); } catch (e) { crossBlocked = e instanceof ForbiddenError; }
+  ok(crossBlocked, 'guard de aplicación bloquea el acceso cruzado al filing (403)');
+  const ownFiling = await db.customsFiling.findFirst({ where: { id: filingA.id, tenantId: A.id } });
+  ok(ownFiling !== null && ownFiling.country === 'TT', 'el dueño ve su filing con todos los campos (schema pusheado real)');
+  const tl = JSON.parse(ownFiling!.timelineJson);
+  ok(Array.isArray(tl) && tl.length === 1 && tl[0].status === 'xml_generated', 'timeline persiste y roundtrip JSON correcto');
+  ok(canTransition(ownFiling!.status, 'filed') && !canTransition(ownFiling!.status, 'cleared'), 'flujo ASYCUDA validado contra el registro real: filed sí, cleared no');
+  const updated = await db.customsFiling.update({
+    where: { id: filingA.id },
+    data: {
+      status: 'registered',
+      registrationNumber: 'C 427',
+      registrationDate: new Date('2026-08-12'),
+      assessmentNumber: 'A-9911',
+      assessedTotal: 158442.5,
+    },
+  });
+  ok(updated.status === 'registered' && updated.registrationNumber === 'C 427' && updated.assessedTotal === 158442.5, 'CUSRES registrado: entry no. + assessment persisten (box B)');
 
   console.log('\n── Cleanup ──');
   await db.tenant.delete({ where: { id: A.id } });

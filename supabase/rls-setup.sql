@@ -48,6 +48,7 @@ alter table "AuditLog"           enable row level security;
 alter table "Notification"       enable row level security;
 alter table "RateConfig"         enable row level security;
 alter table "TenantInvoice"      enable row level security;
+alter table "CustomsFiling"      enable row level security;
 
 -- ── Shared read tables (tariff + permit matrix: same for every tenant) ──────
 create policy "hs_read_all"        on "HsCode"            for select using (true);
@@ -86,6 +87,8 @@ create policy "audit_tenant_ro"    on "AuditLog"          for select using (tena
 create policy "notification_tenant" on "Notification"     for all using (tenant_id::text = public.cc_tenant_id())
                                                           with check (tenant_id::text = public.cc_tenant_id());
 create policy "tenantinvoice_admin" on "TenantInvoice"    for all using (public.cc_is_super_admin()) with check (public.cc_is_super_admin());
+create policy "filing_tenant"      on "CustomsFiling"     for all using (tenant_id::text = public.cc_tenant_id())
+                                                          with check (tenant_id::text = public.cc_tenant_id());
 
 -- ── Immutability hard guard (defense against accidental UPDATE/DELETE) ──────
 create or replace function public.cc_audit_immutable() returns trigger

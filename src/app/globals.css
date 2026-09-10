@@ -163,3 +163,40 @@
     }
   }
 }
+
+/* ── Official forms & premium reports: print pipeline ─────────────────── */
+.print-sheet {
+  background: #ffffff;
+  color: #0f172a;
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 12mm 10mm;
+  box-shadow: 0 1px 2px rgba(15, 41, 66, 0.06), 0 8px 24px -12px rgba(15, 41, 66, 0.18);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.print-sheet .doc-border { border: 1.5px solid #0f172a; }
+.print-sheet .doc-cell { border: 0.75px solid #334155; padding: 3px 5px; vertical-align: top; }
+.print-sheet .doc-label { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.03em; color: #475569; display: block; }
+.print-sheet .doc-value { font-size: 11px; font-weight: 600; word-break: break-word; }
+.print-sheet table { border-collapse: collapse; width: 100%; }
+
+.report-sheet .report-kpi { border-left: 3px solid #0d9488; padding: 6px 10px; background: #f0fdfa; }
+.report-sheet .report-band { background: linear-gradient(90deg, #134e4a, #0d9488); color: #fff; padding: 8px 12px; font-weight: 700; letter-spacing: 0.04em; }
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute !important;
+    left: 0; top: 0; right: 0;
+    width: 100% !important;
+    box-shadow: none !important;
+  }
+  .print-sheet { width: 100% !important; padding: 0 !important; box-shadow: none !important; }
+  .no-print { display: none !important; }
+  .page-break { break-before: page; }
+}

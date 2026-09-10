@@ -33,8 +33,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const s = await requireTenant(req);
-    const body = await readJson<{ title: string; type?: string; shipmentId?: string; fileName: string; mimeType?: string; dataBase64?: string; expiryDate?: string; notes?: string; replaceGroupKey?: string }>(req);
+    const body = await readJson<{ title: string; type?: string; shipmentId?: string; fileName: string; mimeType?: string; dataBase64?: string; expiryDate?: string; notes?: string; replaceGroupKey?: string; checksum?: string }>(req);
     if (!body.title || !body.fileName) return fail(400, 'MISSING_FIELDS', 'Title and file name are required.');
+
+    // Dedupe: identical bytes already current in this tenant's vault → no double storage.
+    if (body.checksum) {
+      const existing = await db.document.findFirst({
+        where: { tenantId: s.tenantId, checksum: body.checksum, isCurrent: true },
+        include: { shipment: { select: { reference: true } } },
+      });
+      if (existing) {
+        return ok({ duplicate: true as const, document: existing });
+      }
+    }
 
     // Storage: local /upload dir in sandbox; Supabase Storage in prod (storageKey kept uniform)
     let storageKey = `documents/${crypto.randomUUID()}-${body.fileName}`;
@@ -79,6 +90,7 @@ export async function POST(req: NextRequest) {
         expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
         notes: body.notes || null,
         uploadedById: s.userId,
+        checksum: body.checksum || null,
       },
       include: { shipment: { select: { reference: true } } },
     });
@@ -86,7 +98,7 @@ export async function POST(req: NextRequest) {
     await appendAuditLog({
       tenantId: s.tenantId, userId: s.userId, action: 'document.uploaded',
       entityType: 'document', entityId: doc.id,
-      metadata: { title: body.title, type: doc.type, version, shipment: doc.shipment?.reference },
+      metadata: { title: body.title, type: doc.type, version, shipment: doc.shipment?.reference, checksum: body.checksum ? body.checksum.slice(0, 12) : null },
     });
     return ok({ document: doc }, 201);
   } catch (err) { return guardError(err); }

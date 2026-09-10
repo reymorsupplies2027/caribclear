@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SoundAlerts } from '@/components/pwa/sound-alerts';
+import { UniversalSearch } from '@/components/search/universal-search';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X,
+  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X, FileText, BarChart3,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -29,6 +30,8 @@ const NAV = [
   { href: '/dashboard/calculator', label: 'Cost engine', icon: Calculator },
   { href: '/dashboard/hs-codes', label: 'HS / CET', icon: Search },
   { href: '/dashboard/permits', label: 'Permits', icon: ClipboardCheck },
+  { href: '/dashboard/forms', label: 'Forms studio', icon: FileText },
+  { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
   { href: '/dashboard/clients', label: 'Clients', icon: Users },
   { href: '/dashboard/quotes', label: 'Quotes', icon: ReceiptText },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
@@ -84,6 +87,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="font-bold truncate">CaribClear</span>
         </Link>
         <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" aria-label="Search everything" onClick={() => window.dispatchEvent(new CustomEvent('cc-open-search'))}>
+            <Search className="h-5 w-5" />
+          </Button>
           <ThemeToggle />
           <NotifBell unread={unread} notifs={notifs} markAll={markAll} />
           <Button variant="ghost" size="icon" aria-label="Toggle menu" onClick={() => setMenuOpen(v => !v)}>
@@ -103,6 +109,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="font-bold leading-tight">CaribClear</div>
             <div className="text-xs text-muted-foreground truncate">{me?.tenant?.name ?? '…'}</div>
           </div>
+        </div>
+        <div className="p-3 border-b">
+          <UniversalSearch />
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {nav.map(item => {

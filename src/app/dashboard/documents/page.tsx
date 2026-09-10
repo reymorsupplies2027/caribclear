@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { FolderLock, Upload, UploadCloud, AlertTriangle, Replace, Trash2, FileText, Download, FileSearch, ShieldCheck, ScanLine } from 'lucide-react';
+import { FolderLock, Upload, UploadCloud, AlertTriangle, Replace, Trash2, FileText, Download, ShieldCheck, ScanLine, CheckCircle2, Copy, XCircle, Loader2, Files } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AiExtractDialog } from './ai-extract';
@@ -17,7 +17,43 @@ import { AiExtractDialog } from './ai-extract';
 interface Doc {
   id: string; groupKey: string; version: number; type: string; title: string; fileName: string;
   mimeType: string | null; fileSize: number; expiryDate: string | null; notes: string | null;
+  checksum: string | null;
   createdAt: string; updatedAt: string; shipment?: { reference: string } | null; uploader?: { name: string } | null;
+}
+
+interface QueueItem {
+  id: string; name: string; size: number; detected: string;
+  status: 'hashing' | 'uploading' | 'stored' | 'duplicate' | 'error';
+  progress: number; error?: string; checksum?: string;
+}
+
+const MAX_BYTES = 10 * 1024 * 1024;
+
+/** SHA-256 of the exact bytes — lets the vault dedupe identical files server-side. */
+async function sha256Hex(file: File): Promise<string> {
+  if (typeof crypto === 'undefined' || !crypto.subtle) return '';
+  const h = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** XHR upload with real progress events (fetch cannot report upload progress). */
+function uploadWithProgress(body: object, onProgress: (pct: number) => void): Promise<{ duplicate?: boolean; document?: Doc }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/documents');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        if (json.success) resolve(json.data as { duplicate?: boolean; document?: Doc });
+        else reject(new Error(json.error?.message || 'Upload failed'));
+      } catch { reject(new Error('Bad server response')); }
+    };
+    xhr.onerror = () => reject(new Error('Network error — check your connection'));
+    xhr.send(JSON.stringify(body));
+  });
 }
 
 const DOC_TYPES = [
@@ -33,7 +69,8 @@ export default function DocumentsPage() {
   const [open, setOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [parsed, setParsed] = useState<{ name: string; label: string } | null>(null);
-  const [busyDrop, setBusyDrop] = useState(false);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [busyQueue, setBusyQueue] = useState(false);
   const browseRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -45,42 +82,74 @@ export default function DocumentsPage() {
 
   const expiring = docs.filter(d => d.expiryDate && (daysUntil(d.expiryDate) ?? 99) < 30);
 
-  /* ── Dropzone: filename → document-type detection (real parse + real upload) ── */
+  /* ── Batch upload: hash → progress → store/dedupe, one file at a time in order ── */
   function guessDocType(name: string): { type: string; label: string } {
     const n = name.toLowerCase();
     if (/commercial[_\s-]*invoice|\binvoice\b|\binv\b/.test(n)) return { type: 'commercial_invoice', label: 'Commercial Invoice' };
     if (/bill[_\s-]*of[_\s-]*lading|\bb\/l\b|\bbl\b|lading/.test(n)) return { type: 'bl', label: 'Bill of Lading' };
     if (/packing[_\s-]*list|\bpl\b/.test(n)) return { type: 'packing_list', label: 'Packing List' };
     if (/permit|licen[cs]e|certificate/.test(n)) return { type: 'permit', label: 'Permit / Licence' };
-    if (/declaration|\bentry\b|c73|c72/.test(n)) return { type: 'declaration', label: 'Customs Declaration' };
+    if (/declaration|\bentry\b|c73|c82|c84/.test(n)) return { type: 'declaration', label: 'Customs Declaration' };
     if (/\bc2\b/.test(n)) return { type: 'c2', label: 'C2 Form' };
     return { type: 'other', label: 'Document' };
   }
 
-  async function uploadDropped(file: File) {
-    setBusyDrop(true); setParsed(null);
-    try {
-      if (file.size > 10 * 1024 * 1024) throw new Error('File exceeds 10MB');
-      const buf = await file.arrayBuffer();
-      let bin = ''; const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      const g = guessDocType(file.name);
-      const title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Dropped document';
-      await api('/api/documents', {
-        method: 'POST',
-        body: JSON.stringify({ title, type: g.type, fileName: file.name, mimeType: file.type || null, dataBase64: btoa(bin) }),
-      });
-      setParsed({ name: file.name, label: g.label });
-      toast({ title: `Parsed as ${g.label} — stored`, description: 'AES-256 encrypted · versioned · expiry alerts on.' });
-      load();
-    } catch (err) {
-      toast({ title: 'Drop failed', description: err instanceof Error ? err.message : 'Upload failed', variant: 'destructive' });
-    } finally { setBusyDrop(false); }
+  function patchQueue(id: string, patch: Partial<QueueItem>) {
+    setQueue(q => q.map(item => (item.id === id ? { ...item, ...patch } : item)));
+  }
+
+  async function enqueueFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (!files.length) return;
+    setBusyQueue(true);
+    const items: QueueItem[] = files.map((f) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: f.name, size: f.size, detected: guessDocType(f.name).label,
+      status: 'hashing', progress: 0,
+    }));
+    setQueue(q => [...q, ...items]);
+    let stored = 0, duplicates = 0, failed = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const item = items[i];
+      try {
+        if (file.size > MAX_BYTES) throw new Error('exceeds the 10MB limit');
+        patchQueue(item.id, { status: 'hashing' });
+        const checksum = await sha256Hex(file);
+        patchQueue(item.id, { checksum, status: 'uploading' });
+        const buf = await file.arrayBuffer();
+        let bin = ''; const bytes = new Uint8Array(buf);
+        for (let j = 0; j < bytes.length; j += 0x8000) bin += String.fromCharCode(...bytes.subarray(j, j + 0x8000));
+        const g = guessDocType(file.name);
+        const title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Dropped document';
+        const res = await uploadWithProgress(
+          { title, type: g.type, fileName: file.name, mimeType: file.type || null, dataBase64: btoa(bin), checksum },
+          (pct) => patchQueue(item.id, { progress: pct }),
+        );
+        if (res.duplicate) { duplicates++; patchQueue(item.id, { status: 'duplicate', progress: 100 }); }
+        else { stored++; patchQueue(item.id, { status: 'stored', progress: 100 }); }
+        setParsed({ name: file.name, label: g.label });
+      } catch (err) {
+        failed++;
+        patchQueue(item.id, { status: 'error', error: err instanceof Error ? err.message : 'failed' });
+      }
+    }
+
+    const parts = [`${stored} stored`];
+    if (duplicates) parts.push(`${duplicates} duplicate${duplicates > 1 ? 's' : ''} skipped`);
+    if (failed) parts.push(`${failed} failed`);
+    toast({
+      title: `Batch finished: ${parts.join(' · ')}`,
+      description: 'AES-256 encrypted · SHA-256 deduped · versioned · expiry alerts on.',
+      variant: failed ? 'destructive' : undefined,
+    });
+    setBusyQueue(false);
+    load();
   }
 
   async function onBrowsePicked(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) await uploadDropped(f);
+    if (e.target.files?.length) await enqueueFiles(e.target.files);
     e.target.value = '';
   }
 
@@ -114,46 +183,79 @@ export default function DocumentsPage() {
         {DOC_TYPES.map(t => <option key={t.k} value={t.k}>{t.label}</option>)}
       </select>
 
-      {/* ── Drag & drop parse zone — drop a document, it is typed and stored ── */}
+      {/* ── Drag & drop batch zone — drop MANY documents, each typed, hashed and stored ── */}
       <div
-        role="button" tabIndex={0} aria-label="Drop document to parse and upload"
+        role="button" tabIndex={0} aria-label="Drop documents to parse and upload"
         onClick={() => browseRef.current?.click()}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && browseRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => {
           e.preventDefault(); setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) uploadDropped(f);
+          if (e.dataTransfer.files?.length) enqueueFiles(e.dataTransfer.files);
         }}
         className={cn(
           'cursor-pointer rounded-xl border-2 border-dashed p-6 sm:p-8 text-center transition-all outline-none',
           dragOver ? 'border-teal-500 bg-teal-500/5 scale-[1.01]' : 'border-slate-300 dark:border-slate-600 hover:border-teal-500/60 hover:bg-muted/30',
-          busyDrop && 'pointer-events-none opacity-70',
+          busyQueue && 'pointer-events-none opacity-70',
         )}
       >
-        <input ref={browseRef} type="file" className="hidden" onChange={onBrowsePicked} aria-hidden="true" />
+        <input ref={browseRef} type="file" multiple className="hidden" onChange={onBrowsePicked} aria-hidden="true" />
         <UploadCloud className={cn('h-9 w-9 mx-auto mb-2', dragOver ? 'text-teal-600' : 'text-slate-400')} />
-        {busyDrop ? (
+        {busyQueue ? (
           <p className="text-sm font-semibold flex items-center justify-center gap-2">
-            <FileSearch className="h-4 w-4 animate-pulse text-teal-600" /> Parsing document…
+            <Loader2 className="h-4 w-4 animate-spin text-teal-600" /> Uploading batch…
           </p>
         ) : (
           <>
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Drop Commercial Invoice or Bill of Lading here to parse
+              <Files className="inline h-4 w-4 mr-1 text-teal-600" /> Drop invoices, B/Ls, packing lists, permits — all at once
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              or click to browse · type auto-detected from the document · encrypted AES-256 on write
+              or click to browse (multi-select) · type auto-detected per file · SHA-256 dedupe · real progress · encrypted AES-256 on write
             </p>
           </>
         )}
-        {parsed && !busyDrop && (
+        {parsed && !busyQueue && (
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
             <ShieldCheck className="h-3.5 w-3.5" /> {parsed.name} → detected: {parsed.label}
           </p>
         )}
       </div>
+
+      {queue.length > 0 && (
+        <div className="rounded-xl border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Upload queue — {queue.length} file(s)</p>
+            {!busyQueue && <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setQueue([])}>Clear</Button>}
+          </div>
+          {queue.map(item => (
+            <div key={item.id} className="flex items-center gap-3 text-sm">
+              {item.status === 'stored' && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+              {item.status === 'duplicate' && <Copy className="h-4 w-4 text-amber-600 shrink-0" />}
+              {item.status === 'error' && <XCircle className="h-4 w-4 text-red-600 shrink-0" />}
+              {(item.status === 'hashing' || item.status === 'uploading') && <Loader2 className="h-4 w-4 animate-spin text-teal-600 shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium">{item.name}</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">
+                    {item.status === 'hashing' && 'hashing SHA-256…'}
+                    {item.status === 'uploading' && `${item.progress}%`}
+                    {item.status === 'stored' && 'stored'}
+                    {item.status === 'duplicate' && 'already in vault — skipped'}
+                    {item.status === 'error' && item.error}
+                  </span>
+                </div>
+                {item.status === 'uploading' && (
+                  <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-teal-600 transition-all" style={{ width: `${item.progress}%` }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {loading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20" />)}</div> : (
         <div className="grid gap-2 md:grid-cols-2">
@@ -167,7 +269,7 @@ export default function DocumentsPage() {
                       <div className="h-10 w-10 rounded-lg bg-teal-600/10 grid place-items-center shrink-0"><FileText className="h-5 w-5 text-teal-600" /></div>
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate">{d.title}</p>
-                        <p className="text-xs text-muted-foreground">{DOC_TYPES.find(t => t.k === d.type)?.label ?? d.type} · v{d.version} · {(d.fileSize / 1024).toFixed(0)} KB</p>
+                        <p className="text-xs text-muted-foreground">{DOC_TYPES.find(t => t.k === d.type)?.label ?? d.type} · v{d.version} · {(d.fileSize / 1024).toFixed(0)} KB{d.checksum ? ` · #${d.checksum.slice(0, 8)}` : ''}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {d.shipment ? `Shipment ${d.shipment.reference} · ` : ''}Uploaded {fmtDateTime(d.createdAt)}
                         </p>
@@ -216,8 +318,10 @@ function UploadForm({ onDone }: { onDone: () => void }) {
     setBusy(true);
     try {
       let dataBase64: string | undefined;
+      let checksum: string | undefined;
       if (file) {
         if (file.size > 10 * 1024 * 1024) throw new Error('File exceeds 10MB');
+        checksum = (await sha256Hex(file)) || undefined;
         const buf = await file.arrayBuffer();
         let bin = ''; const bytes = new Uint8Array(buf);
         for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -225,7 +329,7 @@ function UploadForm({ onDone }: { onDone: () => void }) {
       }
       await api('/api/documents', {
         method: 'POST',
-        body: JSON.stringify({ ...f, fileName: file?.name || `${f.title || 'document'}.txt`, mimeType: file?.type || null, dataBase64 }),
+        body: JSON.stringify({ ...f, fileName: file?.name || `${f.title || 'document'}.txt`, mimeType: file?.type || null, dataBase64, checksum }),
       });
       toast({ title: 'Document stored', description: 'Versioned, expiring-alerts on.' });
       onDone();
@@ -269,11 +373,16 @@ function ReplaceDoc({ doc, onDone }: { doc: Doc; onDone: () => void }) {
         const buf = await file.arrayBuffer();
         let bin = ''; const bytes = new Uint8Array(buf);
         for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-        await api('/api/documents', {
+        const checksum = (await sha256Hex(file)) || undefined;
+        const res = await api<{ duplicate?: boolean; document?: Doc }>('/api/documents', {
           method: 'POST',
-          body: JSON.stringify({ title: doc.title, type: doc.type, expiryDate: doc.expiryDate, replaceGroupKey: doc.groupKey, fileName: file.name, mimeType: file.type, dataBase64: btoa(bin) }),
+          body: JSON.stringify({ title: doc.title, type: doc.type, expiryDate: doc.expiryDate, replaceGroupKey: doc.groupKey, fileName: file.name, mimeType: file.type, dataBase64: btoa(bin), checksum }),
         });
-        toast({ title: 'New version created', description: `v${doc.version + 1} is now current.` });
+        if (res.duplicate) {
+          toast({ title: 'Identical bytes to the current version', description: 'Replace skipped — the vault already stores this exact file.' });
+        } else {
+          toast({ title: 'New version created', description: `v${doc.version + 1} is now current.` });
+        }
         onDone();
       } catch (err) { toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' }); }
     };

@@ -197,6 +197,7 @@ model Document {
   mimeType   String?
   fileSize   Int      @default(0)
   storageKey String
+  checksum  String?  // SHA-256 hex — client-computed; enables dedupe without re-reading the file
   expiryDate DateTime?
   notes      String?
   uploadedById String?

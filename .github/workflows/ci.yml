@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  ci:
+    name: Lint · Typecheck · Tests (Postgres) · Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: carib
+          POSTGRES_PASSWORD: carib_test_pw
+          POSTGRES_DB: caribclear_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U carib"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://carib:carib_test_pw@localhost:5432/caribclear_ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bunx prisma generate
+
+      - name: Push schema to test database
+        run: bunx prisma db push --skip-generate
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint
+        run: bunx eslint .
+
+      - name: Unit suites (engine, billing, plans, accounting, forms, asycuda, mocks, regions, AI)
+        run: |
+          for f in tests/engine.test.ts tests/billing.test.ts tests/plan-guard.test.ts tests/accounting.test.ts tests/forms.test.ts tests/asycuda.test.ts tests/asycuda-mocks.test.ts tests/region-rates.test.ts tests/ai-engines.test.ts; do
+            echo "── $f ──"
+            bun "$f"
+          done
+
+      - name: Isolation suite (real Postgres, cross-tenant)
+        run: bun tests/isolation.test.ts
+
+      - name: Production build
+        run: bun run build

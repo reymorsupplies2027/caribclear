@@ -4,6 +4,7 @@ import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireTenant, assertTenantOwns } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
 import { vaultEncrypt } from '@/lib/vault-crypto';
+import { assertPlanLimit, checkVaultAllowance } from '@/lib/plan-guard';
 import crypto from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
@@ -45,6 +46,20 @@ export async function POST(req: NextRequest) {
       if (existing) {
         return ok({ duplicate: true as const, document: existing });
       }
+    }
+
+    // ── Plan limit: vault quota (server-side; Free = 0.5 GB) ──
+    // Sum counts every stored version (storage holds them all); the incoming
+    // bytes are charged before they touch disk. Metadata-only registrations
+    // (no dataBase64) carry no storage cost.
+    if (body.dataBase64) {
+      const incoming = Buffer.from(body.dataBase64, 'base64').length;
+      const tenantForPlan = await db.tenant.findUnique({ where: { id: s.tenantId }, select: { plan: true } });
+      const agg = await db.document.aggregate({ where: { tenantId: s.tenantId }, _sum: { fileSize: true } });
+      assertPlanLimit(
+        checkVaultAllowance(tenantForPlan?.plan || 'free', agg._sum.fileSize || 0, incoming),
+        'PLAN_LIMIT_VAULT', 'of encrypted vault storage (old document versions can be purged to free space)',
+      );
     }
 
     // Storage: local /upload dir in sandbox; Supabase Storage in prod (storageKey kept uniform)

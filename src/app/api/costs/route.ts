@@ -6,6 +6,7 @@ import { appendAuditLog } from '@/lib/audit';
 import { calculateLandedCost, normalizeRateConfig, DEFAULT_RATE_CONFIG, type RateConfigSnapshot } from '@/lib/engine/landed-cost';
 import { computeRegionLandedCost, getRegionRateSet, RegionNotCalibratedError } from '@/lib/engine/region-rates';
 import { planCoversRegion } from '@/lib/plans';
+import { assertPlanLimit, checkCalcAllowance, startOfCurrentMonth } from '@/lib/plan-guard';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,6 +26,20 @@ export async function POST(req: NextRequest) {
     const s = await requireTenant(req);
     const isPreview = new URL(req.url).searchParams.get('preview') === '1';
     const body = await readJson<Record<string, unknown>>(req);
+
+    // ── Plan limit: persisted calculations per month (server-side; Free = 10) ──
+    // Previews never persist and never consume quota. Only official, saved
+    // calculations (which carry the audit trail and feed e-filing) count.
+    if (!isPreview) {
+      const tenantForPlan = await db.tenant.findUnique({ where: { id: s.tenantId }, select: { plan: true } });
+      const calcsThisMonth = await db.costCalculation.count({
+        where: { tenantId: s.tenantId, createdAt: { gte: startOfCurrentMonth() } },
+      });
+      assertPlanLimit(
+        checkCalcAllowance(tenantForPlan?.plan || 'free', calcsThisMonth),
+        'PLAN_LIMIT_CALCS', 'saved calculations per month (previews are unlimited and free)',
+      );
+    }
 
     const hsCode = String(body.hsCode || '');
     if (!hsCode) return fail(400, 'MISSING_HS', 'HS code is required.');

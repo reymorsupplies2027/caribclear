@@ -14,22 +14,22 @@
 export const PLANS = {
   free: {
     id: 'free', label: 'Free', priceUsd: 0,
-    limits: { users: 1, activeShipments: 3, vaultGb: 0.5, regions: ['TT'] as string[] },
+    limits: { users: 1, activeShipments: 3, calcsPerMonth: 10, vaultGb: 0.5, regions: ['TT'] as string[] },
     blurb: 'Try the engine, 3 shipments, Trinidad rates.',
   },
   pro: {
     id: 'pro', label: 'Pro', priceUsd: 149,
-    limits: { users: 10, activeShipments: 9999, vaultGb: 50, regions: ['TT'] as string[] },
+    limits: { users: 10, activeShipments: 9999, calcsPerMonth: 9999, vaultGb: 50, regions: ['TT'] as string[] },
     blurb: 'Working broker in Trinidad: engine v2, 6 official forms, e-filing C82, AI features, 50 GB vault.',
   },
   regional: {
     id: 'regional', label: 'Regional', priceUsd: 449,
-    limits: { users: 15, activeShipments: 9999, vaultGb: 100, regions: 'ALL' as unknown as string[] },
+    limits: { users: 15, activeShipments: 9999, calcsPerMonth: 9999, vaultGb: 100, regions: 'ALL' as unknown as string[] },
     blurb: 'Rent the service across the Caribbean: all 13 ASYCUDA administrations, regional landed-cost rates (JM/BB/GY/LC/VC/GD/AG), regional e-filing, 100 GB vault.',
   },
   enterprise: {
     id: 'enterprise', label: 'Enterprise', priceUsd: 1500,
-    limits: { users: 999, activeShipments: 9999, vaultGb: 500, regions: 'ALL' as unknown as string[] },
+    limits: { users: 999, activeShipments: 9999, calcsPerMonth: 9999, vaultGb: 500, regions: 'ALL' as unknown as string[] },
     blurb: 'Big shippers & multi-office brokers: everything in Regional + country calibration packs, SLA, ERP integration, dedicated onboarding, unlimited seats review.',
   },
 } as const;

@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X, FileText, BarChart3, Scale, Wrench, Send, Wallet,
+  LayoutDashboard, Ship, FolderLock, Calculator, Search, ClipboardCheck, Users, ReceiptText, Settings, Globe2, Bell, LogOut, Menu, X, FileText, BarChart3, Scale, Wrench, Send, Wallet, Landmark,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -37,6 +37,7 @@ const NAV = [
   { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
   { href: '/dashboard/clients', label: 'Clients', icon: Users },
   { href: '/dashboard/quotes', label: 'Quotes', icon: ReceiptText },
+  { href: '/dashboard/accounting', label: 'Accounting', icon: Landmark },
   { href: '/dashboard/billing', label: 'Billing', icon: Wallet },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];

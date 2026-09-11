@@ -109,6 +109,45 @@ try {
   });
   ok(updated.status === 'registered' && updated.registrationNumber === 'C 427' && updated.assessedTotal === 158442.5, 'CUSRES registrado: entry no. + assessment persisten (box B)');
 
+  console.log('\n── 6. Accounting module: fiduciary ledger / outlays / FX / folios ──');
+  // The ledger is fiduciary: tenant A's client money must be invisible to
+  // tenant B, and folios stay independent per tenant (composite unique).
+  const ledgerA = await db.ledgerEntry.create({
+    data: { tenantId: A.id, shipmentId: sA.id, fund: 'TRUST', direction: 'in', category: 'client_deposit', amount: 5000, currency: 'TTD', description: 'A client advance — trade secret' },
+  });
+  const ledgerB = await db.ledgerEntry.create({
+    data: { tenantId: B.id, fund: 'OPERATING', direction: 'in', category: 'fee_income', amount: 77, currency: 'TTD', description: 'B fee income' },
+  });
+  ok((await db.ledgerEntry.findMany({ where: { tenantId: A.id } })).every(e => e.tenantId === A.id), 'ledger de A visible solo para A');
+  const crossLedger = await db.ledgerEntry.findFirst({ where: { id: ledgerA.id, tenantId: B.id } });
+  ok(crossLedger === null, 'lookup directo cross-tenant del ledger no devuelve nada');
+  ok((await db.ledgerEntry.findMany({ where: { tenantId: B.id, fund: 'TRUST' } })).length === 0, 'B no ve NI UNA fila TRUST de A (fondos separados por tenant)');
+  // UPDATE stays open at the Prisma level — the hard immutability is the DB
+  // trigger in supabase/rls-setup.sql v2 (which also blocks direct DELETE).
+  await db.ledgerEntry.update({ where: { id: ledgerB.id }, data: { description: 'B fee income (amended)' } });
+  ok(true, 'UPDATE app-level permitido (la inmutabilidad dura la aplica el trigger RLS v2)');
+
+  const disbA = await db.disbursement.create({
+    data: { tenantId: A.id, shipmentId: sA.id, category: 'duty', amount: 900, currency: 'TTD', paidFrom: 'trust', status: 'pending' },
+  });
+  ok(await db.disbursement.count({ where: { tenantId: B.id, id: disbA.id } }) === 0, 'outlay de A invisible para B');
+  ok((await db.disbursement.findMany({ where: { tenantId: B.id } })).length === 0, 'B no tiene outlays propios aún (cero filtrados)');
+
+  const fxA = await db.fxRate.create({ data: { tenantId: A.id, baseCcy: 'USD', quoteCcy: 'TTD', rate: 6.7967, source: 'CBTT daily fix', asOf: new Date('2026-09-10') } });
+  ok(await db.fxRate.count({ where: { tenantId: B.id, id: fxA.id } }) === 0, 'FX rate de A invisible para B');
+
+  // Folio per-tenant: both tenants can own QT-2026-0001 (composite unique).
+  const qa = await db.quote.create({
+    data: { tenantId: A.id, number: 'QT-2026-0001', type: 'quote', status: 'draft', itemsJson: '[]', currency: 'TTD' },
+  });
+  const qb = await db.quote.create({
+    data: { tenantId: B.id, number: 'QT-2026-0001', type: 'quote', status: 'draft', itemsJson: '[]', currency: 'TTD' },
+  });
+  ok(qa.number === qb.number && qa.tenantId === A.id && qb.tenantId === B.id, 'folio QT-2026-0001 pertenece a AMBOS tenants (único compuesto, ya no global)');
+  let folioDupBlocked = false;
+  try { await db.quote.create({ data: { tenantId: A.id, number: 'QT-2026-0001', type: 'quote', status: 'draft', itemsJson: '[]' } }); } catch { folioDupBlocked = true; }
+  ok(folioDupBlocked, 'duplicar folio DENTRO del mismo tenant sigue bloqueado (unique compuesto activo)');
+
   console.log('\n── Cleanup ──');
   await db.tenant.delete({ where: { id: A.id } });
   await db.tenant.delete({ where: { id: B.id } });

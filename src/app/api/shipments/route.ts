@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { ok, fail, guardError, readJson } from '@/lib/api';
 import { requireStaff } from '@/lib/guard';
 import { appendAuditLog } from '@/lib/audit';
+import { assertPlanLimit, checkShipmentAllowance, isActiveShipmentStatus } from '@/lib/plan-guard';
 
 async function nextReference(tenantId: string): Promise<string> {
   const year = new Date().getFullYear();
@@ -58,6 +59,20 @@ export async function POST(req: NextRequest) {
     const s = await requireStaff(req);
     const body = await readJson<Record<string, unknown>>(req);
     if (!body.goodsDescription) return fail(400, 'MISSING_FIELDS', 'Goods description is required.');
+
+    // ── Plan limit: active shipments (server-side; Free = 3) ──
+    // A slot is occupied until the shipment reaches a terminal state
+    // (released / cancelled) — closing it frees the slot immediately.
+    const tenant = await db.tenant.findUnique({ where: { id: s.tenantId }, select: { plan: true } });
+    const activeRows = await db.shipment.findMany({
+      where: { tenantId: s.tenantId, closedAt: null },
+      select: { status: true },
+    });
+    const activeReal = activeRows.filter(r => isActiveShipmentStatus(r.status)).length;
+    assertPlanLimit(
+      checkShipmentAllowance(tenant?.plan || 'free', activeReal),
+      'PLAN_LIMIT_SHIPMENTS', 'active shipments (a released or cancelled shipment frees its slot)',
+    );
 
     const parseDate = (v: unknown) => (v ? new Date(String(v)) : null);
     const shipment = await db.shipment.create({

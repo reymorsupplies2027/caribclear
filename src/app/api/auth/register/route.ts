@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       metadata: { companyName: body.companyName, plan: 'free' },
     });
 
-    const res = ok({ tenant, user: { id: user.id, email, name, role: user.role } }, 201);
+    const res = ok({ tenant, user: { id: user.id, email, name: body.name, role: user.role } }, 201);
     setSessionCookie(res, createSessionToken(user.id, tenant.id));
     return res;
   } catch (err) { return guardError(err); }

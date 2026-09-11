@@ -175,6 +175,36 @@ async function seed() {
     },
   });
 
+  // ── Accounting demo: FX table, fiduciary ledger, outlays ──
+  // FX provenance: each rate cites its central bank (CBTT/BOJ/CBB/BOG).
+  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  await db.fxRate.createMany({ data: [
+    { tenantId: tenant.id, baseCcy: 'USD', quoteCcy: 'TTD', rate: 6.7967, source: 'CBTT daily fix', asOf: today },
+    { tenantId: tenant.id, baseCcy: 'USD', quoteCcy: 'JMD', rate: 157.12, source: 'Bank of Jamaica', asOf: today },
+    { tenantId: tenant.id, baseCcy: 'USD', quoteCcy: 'BBD', rate: 2.00, source: 'Central Bank of Barbados (peg)', asOf: today },
+    { tenantId: tenant.id, baseCcy: 'USD', quoteCcy: 'GYD', rate: 208.50, source: 'Bank of Guyana', asOf: today },
+  ] });
+
+  const inInvoice = await db.quote.findFirst({ where: { tenantId: tenant.id, number: `IN-${year}-0001` } });
+  // Outlays in the three states: billed (on IN-0001), paid-but-unbilled, pending.
+  await db.disbursement.createMany({ data: [
+    { tenantId: tenant.id, shipmentId: s5.id, category: 'delivery_order', amount: 300, currency: 'TTD', paidFrom: 'trust', vendorRef: 'DO-77219', status: 'billed', quoteId: inInvoice?.id ?? null, paidAt: daysAgo(21) },
+    { tenantId: tenant.id, shipmentId: s5.id, category: 'storage', amount: 530, currency: 'TTD', paidFrom: 'trust', vendorRef: 'SWC-88412', status: 'billed', quoteId: inInvoice?.id ?? null, paidAt: daysAgo(20) },
+    { tenantId: tenant.id, shipmentId: s1.id, category: 'scanning', amount: 240, currency: 'TTD', paidFrom: 'trust', vendorRef: 'ESC-1104', status: 'paid', paidAt: daysAgo(9) },
+    { tenantId: tenant.id, shipmentId: s3.id, category: 'duty', amount: 4200, currency: 'TTD', paidFrom: 'trust', status: 'pending' },
+  ] });
+
+  // Ledger: TRUST (client money) and OPERATING (house money) — never netted.
+  // TRUST: 24,500 in − 830 − 240 out = 23,430 held for clients.
+  // OPERATING: 1,450 fee income − 95 bank charges = 1,355 house money.
+  await db.ledgerEntry.createMany({ data: [
+    { tenantId: tenant.id, shipmentId: s3.id, fund: 'TRUST', direction: 'in', category: 'client_deposit', amount: 24500, currency: 'TTD', description: 'Client advance — Sanchez Home & Auto (duty/VAT/port charges)', createdById: admin.id },
+    { tenantId: tenant.id, shipmentId: s5.id, fund: 'TRUST', direction: 'out', category: 'duty_paid', amount: 830, currency: 'TTD', description: 'Delivery order + storage — billed on IN-2026-0001', createdById: admin.id },
+    { tenantId: tenant.id, shipmentId: s1.id, fund: 'TRUST', direction: 'out', category: 'storage_paid', amount: 240, currency: 'TTD', description: 'Container scanning — to be billed on next invoice', createdById: admin.id },
+    { tenantId: tenant.id, shipmentId: s5.id, fund: 'OPERATING', direction: 'in', category: 'fee_income', amount: 1450, currency: 'TTD', description: 'Air clearance fee — IN-2026-0001', quoteId: inInvoice?.id ?? null, createdById: admin.id },
+    { tenantId: tenant.id, fund: 'OPERATING', direction: 'out', category: 'bank_charge', amount: 95, currency: 'TTD', description: 'Monthly bank charges', createdById: admin.id },
+  ] });
+
   // Notifications
   await db.notification.createMany({ data: [
     { tenantId: tenant.id, type: 'demurrage', severity: 'critical', title: 'Demurrage: free days end in 1 day', body: 'Shipment CC-2026-0003 (vehicle): penalty TT$350/day from tomorrow.', shipmentId: s3.id },

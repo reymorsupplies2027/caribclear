@@ -306,16 +306,18 @@ model Quote {
   client    Client?  @relation(fields: [clientId], references: [id])
   shipmentId String?
   shipment  Shipment? @relation(fields: [shipmentId], references: [id])
-  number    String   @unique // QT-2026-0001 / IN-2026-0001
+  number    String   // QT-2026-0001 / IN-2026-0001 — unique PER TENANT (composite below);
+            // a GLOBAL unique here would collide tenant B's QT-2026-0001 against tenant A's
   type      String   @default("quote") // quote | invoice
   status    String   @default("draft") // draft | sent | approved | rejected | paid
-  itemsJson String   // [{kind:"fee"|"disbursement", description, amount}]
+  itemsJson String   // [{kind:"fee"|"disbursement", description, amount, currency?, fxRate?}]
   feesTotal Float    @default(0)
   disbursementsTotal Float @default(0)
   vatRate   Float    @default(12.5)
   vatTotal  Float    @default(0)
   total     Float    @default(0)
-  currency  String   @default("TTD")
+  currency  String   @default("TTD") // invoice currency — every line converts into this
+  fxDetailJson String? // [{itemIndex, currency, fxRate, source, asOf}] — FX provenance per converted line
   validUntil DateTime?
   dueDate   DateTime?
   approvedAt DateTime?
@@ -323,6 +325,9 @@ model Quote {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, number])
+  @@index([tenantId, type, status])
 }
 
 // ─── IMMUTABLE AUDIT LOG — hash-chained (court-grade) ────────
@@ -480,6 +485,83 @@ model CustomsFiling {
   createdById        String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, shipmentId])
+}
+
+// ─── ACCOUNTING — FIDUCIARY FUNDS (Enterprise module) ────────────────────────
+// Brokers hold CLIENT money (duty/VAT collected in advance) separate from
+// HOUSE money (their own fees). The ledger NEVER mixes funds: every entry
+// carries fund = TRUST | OPERATING and the UI shows the two balances side by
+// side. Entries are append-only in the app (no update/delete endpoints) and
+// the RLS script adds a trigger making fund/direction/amount immutable in DB.
+
+// FX table — replaces hardcoded static rates. One row per tenant per
+// base/quote pair per day, with the SOURCE of every rate (bank of the
+// relevant administration, e.g. CBTT for TTD, BOJ for JMD) so invoices can
+// show where each conversion came from.
+model FxRate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  baseCcy   String   // e.g. USD — 1 unit of base
+  quoteCcy  String   // e.g. TTD — rate is quote per 1 base
+  rate      Float
+  source    String   // e.g. "CBTT daily fix 2026-09-10", "BOJ", "manual"
+  asOf      DateTime // the day the rate is valid for
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, baseCcy, quoteCcy, asOf])
+  @@index([tenantId, baseCcy, quoteCcy])
+}
+
+// Double-entry-lite ledger. direction: in | out. Trust inflow = client
+// deposit; trust outflow = duty/VAT paid to customs on the client's behalf.
+// Operating inflow = fee income; operating outflow = house expenses.
+model LedgerEntry {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  shipment    Shipment? @relation(fields: [shipmentId], references: [id])
+  fund        String   // TRUST | OPERATING — never mixed
+  direction   String   // in | out
+  category    String   // trust: client_deposit|duty_paid|vat_paid|storage_paid|refund_to_client
+                       // operating: fee_income|subscription|bank_charge|petty_cash_topup|other
+  amount      Float
+  currency    String   @default("TTD")
+  fxRate      Float?   // local ccy per USD at entry time (provenance in FxRate)
+  description String
+  quoteId     String?  // invoice/quote that generated it (fee income linkage)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, fund])
+  @@index([tenantId, createdAt])
+}
+
+// Outlays the broker pays on a client's behalf (port charges, duty cheques,
+// delivery orders, storage). Lifecycle: pending → paid (money leaves a fund;
+// a LedgerEntry with fund=paidFrom mirrors it) → billed (attached to an
+// invoice line) | written_off.
+model Disbursement {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  shipment    Shipment? @relation(fields: [shipmentId], references: [id])
+  category    String    @default("duty") // duty | vat | wharfage | delivery_order | storage | scanning | transport | other
+  amount      Float
+  currency    String    @default("TTD")
+  fxRate      Float?
+  paidFrom    String    @default("trust") // trust | operating | petty_cash | company_card
+  vendorRef   String?   // receipt / cheque no.
+  status      String    @default("pending") // pending | paid | billed | written_off
+  quoteId     String?   // invoice that billed it (status billed)
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([tenantId, status])
   @@index([tenantId, shipmentId])

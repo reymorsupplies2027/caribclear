@@ -1,6 +1,7 @@
 /** API response helpers — consistent envelope + guard error mapping. */
 import { NextResponse } from 'next/server';
 import { UnauthorizedError, ForbiddenError } from '@/lib/session';
+import { PlanLimitError } from '@/lib/plan-guard';
 
 export function ok(data: unknown, init?: number) {
   return NextResponse.json({ success: true, data }, { status: init ?? 200 });
@@ -13,6 +14,11 @@ export function fail(status: number, code: string, message: string, extra?: Reco
 export function guardError(err: unknown) {
   if (err instanceof UnauthorizedError) return fail(401, 'UNAUTHORIZED', 'Sign in to continue.');
   if (err instanceof ForbiddenError) return fail(403, 'FORBIDDEN', err.message || 'Access denied.');
+  if (err instanceof PlanLimitError) {
+    return fail(403, err.code, err.message, {
+      limit: String(err.limit), used: String(err.used), upgradePlan: err.upgradePlan,
+    });
+  }
   console.error('[api]', err instanceof Error ? err.message : err);
   return fail(500, 'INTERNAL', 'Unexpected error. Check server logs.');
 }

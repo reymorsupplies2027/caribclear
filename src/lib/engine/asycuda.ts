@@ -549,11 +549,27 @@ export interface CusresResult {
 function firstTag(xml: string, tags: string[]): string | null {
   for (const t of tags) {
     const m = new RegExp(`<${t}(?:\\s[^>]*)?>([^<]+)</${t}>`, 'i').exec(xml);
-    if (m && m[1].trim()) return m[1].trim();
+    if (m && m[1].trim()) { const v = sanitizeExtracted(m[1]); if (v) return v; }
     const attr = new RegExp(`<${t}\\s[^>]*(?:number|value)="([^"]+)"[^>]*\\s*/?>`, 'i').exec(xml);
-    if (attr && attr[1].trim()) return attr[1].trim();
+    if (attr && attr[1].trim()) { const v = sanitizeExtracted(attr[1]); if (v) return v; }
   }
   return null;
+}
+
+/**
+ * Sanitize an extracted CUSRES value (defense against hostile portal output):
+ *  - strips control characters / NULs (binary garbage responses),
+ *  - rejects unresolved XML entities (&xxe; &lol; …) — the parser is
+ *    regex-based and NEVER resolves entities, so an entity in the payload
+ *    means the real content never arrived: recording it would invent data,
+ *  - rejects leftovers that still look like markup.
+ * Empty/unsafe → null (the field stays absent — honest failure).
+ */
+function sanitizeExtracted(raw: string): string | null {
+  const stripped = raw.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim();
+  if (!stripped) return null;
+  if (/&[A-Za-z#0-9]+;/.test(stripped) || stripped.includes('<') || stripped.includes('>')) return null;
+  return stripped;
 }
 
 function toIsoDate(s: string): string | undefined {

@@ -11,22 +11,12 @@ import { Check, Minus, Ship, CreditCard, Globe2, Building2 } from 'lucide-react'
 
 interface Plan {
   id: string; label: string; priceUsd: number; blurb: string;
-  limits: { users: number; activeShipments: number; vaultGb: number; regions: string[] | string };
+  limits: { users: number; activeShipments: number; calcsPerMonth: number; vaultGb: number; regions: string[] | string };
 }
 interface PlansData {
   plans: Plan[]; free: Plan;
   paymentRails: { wipay: boolean; paypal: boolean; manual: boolean };
 }
-
-/** Verified leader benchmarks (research/43-47,58 — sources on the pricing page footer). */
-const LEADERS = [
-  { name: 'CaribClear', price: 'US$0 – 1,500 /month flat', note: 'ASYCUDA Caribbean specialist: landed cost + 6 official forms + e-filing + AI. No per-transaction toll.', ours: true },
-  { name: 'Magaya', price: '~US$3,000 setup + US$300–350 /user/month', note: 'Digital Freight Platform (forwarding + WMS + accounting).' },
-  { name: 'CargoWise', price: 'US$50k–200k+ implementation + per-transaction fees', note: 'Enterprise global forwarding suite; months-long rollouts.' },
-  { name: 'Descartes e-Customs', price: 'from €200 /month + €800 setup', note: 'Customs filing module (EU-centric; per-country modules extra).' },
-  { name: 'Zonos Landed Cost', price: 'US$2 /guaranteed order + 10% of duties & taxes', note: 'Cross-border ecommerce landed-cost API (guarantee model).' },
-  { name: 'SimplyDuty', price: '£0.10 /call · US$199 /month per 10k calls', note: 'Pay-per-use duty calculator API; calculator only, no clearance workflow.' },
-];
 
 export default function PricingPage() {
   const [data, setData] = useState<PlansData | null>(null);
@@ -103,35 +93,7 @@ export default function PricingPage() {
           </Card>
         </section>
 
-        {/* LEADER COMPARISON */}
-        <section className="border-t bg-muted/30">
-          <div className="container mx-auto px-4 py-12">
-            <h2 className="text-2xl font-bold text-center">How our rental compares to the systems the big players use</h2>
-            <p className="text-center text-muted-foreground mt-2 mb-8 max-w-2xl mx-auto">
-              Published benchmarks from the leaders in landed-cost and customs software. Every figure has a public source.
-            </p>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {LEADERS.map((l) => (
-                <Card key={l.name} className={l.ours ? 'border-primary border-2' : ''}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        {l.ours && <Ship className="h-4 w-4 text-primary" />}
-                        {l.name}
-                      </h3>
-                      {l.ours && <Badge>Us</Badge>}
-                    </div>
-                    <p className={`mt-2 text-lg font-bold ${l.ours ? 'text-primary' : ''}`}>{l.price}</p>
-                    <p className="text-sm text-muted-foreground mt-2">{l.note}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground text-center mt-6 max-w-3xl mx-auto">
-              Sources: Magaya user-reported pricing (2023, ~US$250–350/user/mo + setup) · GoFreight vs CargoWise TCO comparison (Dec 2025) · checkthat.ai CargoWise pricing (Mar 2026) · descartes.com pricing overview · gingercontrol.com duty-API comparison (May 2026) · tariffsapi.com SimplyDuty comparison · WiPay T&amp;T merchant terms (Oct 2025). Figures as published; vendor pricing changes — verify before contracting.
-            </p>
-          </div>
-        </section>
+        { /* Leader benchmarks moved to /compare — the pricing page sells our rental, not the competition. */ }
 
         {/* WHO IS IT FOR */}
         <section className="container mx-auto px-4 py-12">
@@ -157,6 +119,8 @@ export default function PricingPage() {
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
         CaribClear — landed cost &amp; ASYCUDA e-filing for the Caribbean. Indicative rates; the charge is always the local tariff at filing.
+        {' '}
+        <Link href="/compare" className="underline hover:text-foreground">Compare with the leaders</Link>
       </footer>
     </div>
   );
@@ -175,6 +139,8 @@ function TierCard({ plan, featured, cta }: { plan: Plan; featured: boolean; cta:
         <p className="text-sm text-muted-foreground mt-2 flex-none">{plan.blurb}</p>
         <ul className="mt-4 space-y-2 text-sm flex-1">
           <Li ok>{plan.limits.users >= 999 ? 'Unlimited seats (review at onboarding)' : `${plan.limits.users} users`}</Li>
+          <Li ok>{plan.limits.activeShipments >= 9999 ? 'Unlimited active shipments' : `${plan.limits.activeShipments} active shipments`}</Li>
+          <Li ok>{plan.limits.calcsPerMonth >= 9999 ? 'Unlimited saved calculations' : `${plan.limits.calcsPerMonth} saved calculations/month (previews unlimited)`}</Li>
           <Li ok>{regions}</Li>
           <Li ok>{plan.limits.vaultGb} GB encrypted vault</Li>
           <Li ok>AI: OCR invoices, HS classification, demurrage forecast</Li>
